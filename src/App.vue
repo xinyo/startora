@@ -1,17 +1,16 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
+import Config from './components/config.vue'
+import Main from './components/main.vue'
+import { reactive } from 'vue';
+const state = reactive({
+  isConfigDialog: false
+})
 </script>
 
 <template>
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-    </a>
-  </div>
-  <HelloWorld msg="Vite + Vue" />
+  <Main v-if="!state.isConfigDialog"></Main>
+  <Config v-if="state.isConfigDialog" msg="Vite + Vue" />
+  <button @click="state.isConfigDialog = !state.isConfigDialog">config</button>
 </template>
 
 <style scoped>
