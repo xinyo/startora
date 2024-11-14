@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Config from "./components/config.vue";
 import Main from "./components/main.vue";
-import * as API from "./service/api";
+import * as API from "../server/api";
 import { ref, reactive, onMounted } from "vue";
 import { useStore } from "./store";
 import logo from "./assets/logo-group.svg";

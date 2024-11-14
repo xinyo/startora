@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { Theme } from "../types/store";
+import { Theme } from "../client/types/store";
 
 export const useStore = defineStore("store", {
   state: () => ({ theme: { primary: "", accent: "", background: "" } }),

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useStore } from "../store/index";
-import { Theme } from "../types/store";
+import { Theme } from "../client/types/store";
 const colors = [
   {
     name: "default",

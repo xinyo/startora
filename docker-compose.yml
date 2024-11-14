@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: startora
+    ports:
+      - "3000:3000" # Node.js API
+      - "5173:5173" # Vite front-end (development mode)
+    volumes:
+      - ./src/db:/var/lib/postgresql/data # Mount PostgreSQL data directory inside the container
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=localhost
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_NAME=startora
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
