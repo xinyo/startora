@@ -2,7 +2,7 @@
 import Config from "./components/config.vue";
 import Main from "./components/main.vue";
 import * as API from "../server/api";
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, onMounted, computed } from "vue";
 import { useStore } from "./store";
 import logo from "./assets/logo-group.svg";
 
@@ -54,15 +54,6 @@ onMounted(async () => {
     </button>
   </div>
 </template>
-
-<style>
-:root {
-  --background-primary: v-bind(store.theme.background);
-  --txt-primary: v-bind(store.theme.primary);
-  --accent: v-bind(store.theme.accent);
-  background-color: var(--background-primary);
-}
-</style>
 
 <style scoped>
 .debug {

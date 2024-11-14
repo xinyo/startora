@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useStore } from "../store/index";
+import { NCard } from "naive-ui";
 import type { Theme } from "../types/store";
 const colors = [
   {
@@ -25,23 +26,38 @@ const colors = [
 const store = useStore();
 const emitTheme = (color: Theme) => {
   const { name, ...data } = color;
+  document.documentElement.style.setProperty(
+    "--background-primary",
+    data.background
+  );
+  document.documentElement.style.setProperty("--txt-primary", data.primary);
+  document.documentElement.style.setProperty("--accent", data.accent);
   store.updateTheme(data);
 };
 </script>
 
 <template>
   <h2>theme</h2>
-  <div class="colors" v-for="color in colors" @click="emitTheme(color)">
-    <div class="color-option">
-      <div :style="{ 'background-color': color.primary }"></div>
-      <div :style="{ 'background-color': color.accent }"></div>
-      <div :style="{ 'background-color': color.background }"></div>
-    </div>
-    {{ color.name }}
+  <div class="theme-container">
+    <n-card class="colors" v-for="color in colors" @click="emitTheme(color)">
+      <div class="color-option">
+        <div :style="{ 'background-color': color.primary }"></div>
+        <div :style="{ 'background-color': color.accent }"></div>
+        <div :style="{ 'background-color': color.background }"></div>
+      </div>
+      {{ color.name }}
+    </n-card>
   </div>
 </template>
 
 <style scoped>
+.theme-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Two columns */
+  gap: 10px; /* Space between items */
+  list-style-type: none;
+  padding: 0;
+}
 .colors {
   display: flex;
   justify-content: center;
