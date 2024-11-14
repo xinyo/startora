@@ -7,41 +7,30 @@ import General from "./general.vue";
 
 // Define the tabs and config data
 const title = "Config Page";
+const selected = ref(null);
 
-const tabs = ref([
+const tabs = [
   {
     name: "General",
     id: "general",
     component: General,
   },
   { name: "Theme", id: "theme", component: Theme },
-]);
-
-// Set the default selected tab
-const selectedTab = ref(tabs.value[0].id);
-
-// Function to change the selected tab
-function selectTab(tabId: string) {
-  selectedTab.value = tabId;
-}
-
-const currentTabComponent = computed(() => {
-  const tab = tabs.value.find((tab) => tab.id === selectedTab.value);
-  return tab ? tab.component : null;
-});
+];
 </script>
 
 <template>
   <div class="config-container">
     <h1>{{ title }}</h1>
+    {{ selected }}
 
     <n-tabs type="line" placement="left" animated>
-      <n-tab-pane name="oasis" tab="Oasis"> Wonderwall </n-tab-pane>
-      <n-tab-pane name="the beatles" tab="the Beatles"> Hey Jude </n-tab-pane>
-      <n-tab-pane name="jay chou" tab="Jay Chou"> Qilixiang </n-tab-pane>
+      <n-tab-pane v-for="tab in tabs" :name="tab.id" :tab="tab.name">
+        <component :is="tab.component"></component>
+      </n-tab-pane>
     </n-tabs>
 
-    <div class="tabs">
+    <!-- <div class="tabs">
       <div class="tab-list">
         <ul>
           <li
@@ -57,7 +46,7 @@ const currentTabComponent = computed(() => {
       <div class="tab-content">
         <component :is="currentTabComponent"></component>
       </div>
-    </div>
+    </div> -->
   </div>
 </template>
 
