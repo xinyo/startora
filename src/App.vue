@@ -1,34 +1,50 @@
 <script setup lang="ts">
-import { watch } from "vue";
 import Config from "./components/config.vue";
 import Main from "./components/main.vue";
-import { reactive } from "vue";
+import * as API from "./service/api";
+import { ref, reactive, onMounted } from "vue";
 import { useStore } from "./store";
+import logo from "./assets/logo-group.svg";
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
 const state = reactive({
   isConfigDialog: false,
-  debug: false,
+  debug: true,
+  userName: "",
+  userEmail: "",
 });
 const store = useStore();
-watch(
-  () => store.theme,
-  (newTheme) => {
-    // Update the :root CSS variables when the theme changes
-    document.documentElement.style.setProperty(
-      "--background-primary",
-      newTheme.background
-    );
-    document.documentElement.style.setProperty(
-      "--txt-primary",
-      newTheme.primary
-    );
-    document.documentElement.style.setProperty("--accent", newTheme.accent);
-  },
-  { immediate: true }
-);
+const users = ref<User[]>([]);
+
+const createUser = async () => {
+  await API.addUser(state.userName, state.userEmail);
+};
+
+const getUsers = async () => {
+  users.value = await API.getUsers();
+};
+
+onMounted(async () => {
+  await getUsers();
+});
 </script>
 
 <template>
   <div>
+    <img :src="logo" />
+    <div>users</div>
+    <li v-for="user in users" :key="user.id">
+      {{ user.name }} - {{ user.email }}
+    </li>
+    <input type="text" v-model="state.userName" placeholder="name" />
+    <input type="email" v-model="state.userEmail" placeholder="email" />
+    <button @click="createUser">create user</button>
+    <button @click="getUsers">get user</button>
     <pre v-if="state.debug" class="debug">{{ store }}</pre>
     <Main v-if="!state.isConfigDialog"></Main>
     <Config v-if="state.isConfigDialog" msg="Vite + Vue" />
@@ -39,22 +55,22 @@ watch(
   </div>
 </template>
 
+<style>
+:root {
+  --background-primary: v-bind(store.theme.background);
+  --txt-primary: v-bind(store.theme.primary);
+  --accent: v-bind(store.theme.accent);
+  background-color: var(--background-primary);
+}
+</style>
+
 <style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
-}
 .debug {
   position: fixed;
   right: 0;
   top: 0;
+  background: wheat;
+  text-align: left;
+  padding: 2em;
 }
 </style>
