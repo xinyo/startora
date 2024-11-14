@@ -1,5 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed } from "vue";
+import { NTabs, NTabPane } from "naive-ui";
+// import type { TabsProps } from 'naive-ui'
 import Theme from "./theme.vue";
 import General from "./general.vue";
 
@@ -32,6 +34,12 @@ const currentTabComponent = computed(() => {
 <template>
   <div class="config-container">
     <h1>{{ title }}</h1>
+
+    <n-tabs type="line" placement="left" animated>
+      <n-tab-pane name="oasis" tab="Oasis"> Wonderwall </n-tab-pane>
+      <n-tab-pane name="the beatles" tab="the Beatles"> Hey Jude </n-tab-pane>
+      <n-tab-pane name="jay chou" tab="Jay Chou"> Qilixiang </n-tab-pane>
+    </n-tabs>
 
     <div class="tabs">
       <div class="tab-list">
