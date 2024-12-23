@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useStore } from "../store/index";
-import { NCard } from "naive-ui";
+import { NCard, useMessage } from "naive-ui";
 import type { Theme } from "../types/store";
 const colors = [
   {
@@ -24,6 +24,8 @@ const colors = [
 ];
 
 const store = useStore();
+const message = useMessage();
+
 const emitTheme = (color: Theme) => {
   const { name, ...data } = color;
   document.documentElement.style.setProperty(
@@ -33,6 +35,7 @@ const emitTheme = (color: Theme) => {
   document.documentElement.style.setProperty("--txt-primary", data.primary);
   document.documentElement.style.setProperty("--accent", data.accent);
   store.updateTheme(data);
+  message.success(`Theme updated ${name}`, { duration: 3000 });
 };
 </script>
 
