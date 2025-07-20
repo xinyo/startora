@@ -82,6 +82,25 @@ app.post("/user/:userid/apps", async (req, res) => {
   }
 });
 
+// update a user's app
+app.put("/user/:userid/apps/:appId", async (req, res) => {
+  const { userid, appId } = req.params;
+  const { appName, appData } = req.body;
+  try {
+    const result = await client.query(
+      "UPDATE user_apps SET app_name = $1, app_data = $2 WHERE user_id = $3 AND id = $4 RETURNING *",
+      [appName, appData, userid, appId]
+    );
+    if (result.rows.length > 0) {
+      res.status(200).json(result.rows[0]);
+    } else {
+      res.status(404).json({ error: "App not found" });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Create a route to add a user
 app.post("/users", async (req, res) => {
   const { name, email } = req.body;

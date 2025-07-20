@@ -71,5 +71,18 @@ export const useStore = defineStore("store", {
         console.error("Failed to add user app:", error);
       }
     },
+    async putUserApp(appId: number, appName: string, appData: any) {
+      try {
+        const id = this.session.id;
+        const updatedApp = await API.putUserApp(id, appName, appData, appId);
+        console.log("Updated user app:", updatedApp);
+        if (updatedApp) {
+          this.initApps();
+          return updatedApp;
+        }
+      } catch (error) {
+        console.error("Failed to update user app:", error);
+      }
+    },
   },
 });

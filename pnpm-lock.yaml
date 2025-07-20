@@ -33,9 +33,6 @@ importers:
       '@vicons/fluent':
         specifier: ^0.13.0
         version: 0.13.0
-      '@vicons/utils':
-        specifier: ^0.1.4
-        version: 0.1.4(vue@3.5.17(typescript@5.6.3))
       '@vitejs/plugin-vue':
         specifier: ^5.2.1
         version: 5.2.4(vite@6.3.5)(vue@3.5.17(typescript@5.6.3))
@@ -361,16 +358,8 @@ packages:
   '@types/lodash@4.17.20':
     resolution: {integrity: sha512-H3MHACvFUEiujabxhaI/ImO6gUrd8oOurg7LQtS7mbwIXA/cUqWrvBsaeJ23aZEPk1TAYkurjfMbSELfoCXlGA==}
 
-  '@types/node@14.14.45':
-    resolution: {integrity: sha512-DssMqTV9UnnoxDWu959sDLZzfvqCF0qDNRjaWeYSui9xkFe61kKo4l1TWNTQONpuXEm+gLMRvdlzvNHBamzmEw==}
-
   '@vicons/fluent@0.13.0':
     resolution: {integrity: sha512-bYGZsOE3qzvm3Cm43e7tybgGlr5ZUpYqtRZq0g0Tfupe8jIzLolpvQLNUt1zS8Mgt6goTbUk5YH7Fkv16jkykg==}
-
-  '@vicons/utils@0.1.4':
-    resolution: {integrity: sha512-OHI19qVNN6i+uPQ+Y3f2s0dUxwsYnOCcKBW7XOU4yXXO1aU3ZoKpblCc3+4N0qmgoJs5rWKRAaMisipqEXJwAg==}
-    peerDependencies:
-      vue: ^3.0.6
 
   '@vitejs/plugin-vue@5.2.4':
     resolution: {integrity: sha512-7Yx/SXSOcQq5HiiV3orevHUFn+pmMB4cgbEkDYgnkUWb0WfeQ/wa2yFv6D5ICiCQOVpjA7vYDXrC7AGO8yjDHA==}
@@ -430,9 +419,6 @@ packages:
 
   '@vue/shared@3.5.17':
     resolution: {integrity: sha512-CabR+UN630VnsJO/jHWYBC1YVXyMq94KKp6iF5MQgZJs5I8cmjw6oVMO1oDbtBkENSHSSn/UadWlW/OAgdmKrg==}
-
-  '@xicons/utils@0.1.4':
-    resolution: {integrity: sha512-uXxKDLz9abr80yJC05XSTq6wlyFcdW+N/1IYJkeHjzzXVc4VQ0sEYMoMMTjAH7HQBOyOkzOB4pf5NGF72lwa8Q==}
 
   accepts@1.3.8:
     resolution: {integrity: sha512-PYAthTa2m2VKxuvSD3DPC/Gy+U+sOA1LAuT8mkmRuvw+NACSaeXEQ+NHcVF7rONl6qcaxV3Uuemwawk+7+SJLw==}
@@ -525,9 +511,6 @@ packages:
   cors@2.8.5:
     resolution: {integrity: sha512-KIHbLJqu73RGr/hnbrO9uBeixNGuvSQjul/jdFvS/KFSIH1hWVd1ng7zOHx+YrEfInLG7q4n6GHQ9cDtxv/P6g==}
     engines: {node: '>= 0.10'}
-
-  css-render@0.13.9:
-    resolution: {integrity: sha512-n3C4ZH59rveBrUlAD7n0Ze9/gUMKa4dlH1C9CWKpGcIHR/xRcIVXzBGy1iw8WWq2ySmn2/ZqOpySQNAK5Pb6sw==}
 
   css-render@0.15.14:
     resolution: {integrity: sha512-9nF4PdUle+5ta4W5SyZdLCCmFd37uVimSjg1evcTqKJCyvCEEj12WKzOSBNak6r4im4J4iYXKH1OWpUV5LBYFg==}
@@ -1312,14 +1295,7 @@ snapshots:
 
   '@types/lodash@4.17.20': {}
 
-  '@types/node@14.14.45': {}
-
   '@vicons/fluent@0.13.0': {}
-
-  '@vicons/utils@0.1.4(vue@3.5.17(typescript@5.6.3))':
-    dependencies:
-      '@xicons/utils': 0.1.4
-      vue: 3.5.17(typescript@5.6.3)
 
   '@vitejs/plugin-vue@5.2.4(vite@6.3.5)(vue@3.5.17(typescript@5.6.3))':
     dependencies:
@@ -1411,10 +1387,6 @@ snapshots:
       vue: 3.5.17(typescript@5.6.3)
 
   '@vue/shared@3.5.17': {}
-
-  '@xicons/utils@0.1.4':
-    dependencies:
-      css-render: 0.13.9
 
   accepts@1.3.8:
     dependencies:
@@ -1523,12 +1495,6 @@ snapshots:
     dependencies:
       object-assign: 4.1.1
       vary: 1.1.2
-
-  css-render@0.13.9:
-    dependencies:
-      '@emotion/hash': 0.8.0
-      '@types/node': 14.14.45
-      csstype: 3.0.11
 
   css-render@0.15.14:
     dependencies:

@@ -43,14 +43,17 @@ onMounted(async () => {
     <n-message-provider placement="bottom">
       <img :src="logo" />
       <div>
+
         <input type="text" v-model="appName" placeholder="App Name" />
         <input type="text" v-model="appUrl" placeholder="App URL" />
         <button @click="store.initApps">init apps</button>
         <button @click="addApp()">add app</button>
-      </div>
 
-      <Main v-if="!isConfigDialog"></Main>
-      <Config v-if="isConfigDialog" />
+      </div>
+      <n-modal-provider>
+        <Main v-if="!isConfigDialog"></Main>
+        <Config v-if="isConfigDialog" />
+      </n-modal-provider>
 
 
 
