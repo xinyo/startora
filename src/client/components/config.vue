@@ -1,13 +1,14 @@
 <script lang="ts" setup>
-import { ref, computed } from "vue";
-import { NTabs, NTabPane } from "naive-ui";
+import { NTabPane, NTabs } from "naive-ui";
+import { ref } from "vue";
 // import type { TabsProps } from 'naive-ui'
-import Theme from "./theme.vue";
 import General from "./general.vue";
+import Theme from "./theme.vue";
 
 // Define the tabs and config data
 const title = "Config Page";
 const selected = ref(null);
+
 
 const tabs = [
   {
@@ -17,11 +18,17 @@ const tabs = [
   },
   { name: "Theme", id: "theme", component: Theme },
 ];
+
+const createUser = async () => {
+  await API.addUser(state.userName, state.userEmail);
+};
 </script>
 
 <template>
   <div class="config-container">
+
     <h1>{{ title }}</h1>
+    <button @click="createUser"></button>
     {{ selected }}
 
     <n-tabs type="line" placement="left" animated>
@@ -51,8 +58,7 @@ const tabs = [
 </template>
 
 <style scoped>
-.config-container {
-}
+.config-container {}
 
 .tabs {
   display: flex;

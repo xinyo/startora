@@ -1,58 +1,72 @@
 <script setup lang="ts">
+import { onMounted, ref } from "vue";
+import logo from "./assets/logo-group.svg";
 import Config from "./components/config.vue";
 import Main from "./components/main.vue";
-import * as API from "../server/api";
-import { ref, reactive, onMounted, computed } from "vue";
 import { useStore } from "./store";
-import logo from "./assets/logo-group.svg";
-// import { useMessage } from "naive-ui";
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-}
+const isConfigDialog = ref(false);
+const appName = ref("");
+const appUrl = ref("http://");
 
-const state = reactive({
-  isConfigDialog: false,
-  debug: true,
-  userName: "",
-  userEmail: "",
-});
 const store = useStore();
-const users = ref<User[]>([]);
-// window.$message = useMessage();
 
-const createUser = async () => {
-  await API.addUser(state.userName, state.userEmail);
+const addApp = async () => {
+  if (appName.value && appUrl.value) {
+    const data = await store.addUserApp(appName.value, {
+      url: appUrl.value,
+    });
+    if (data) {
+      appName.value = "";
+      appUrl.value = "http://";
+    }
+
+  } else {
+    console.error("App name and URL are required");
+  }
 };
 
-const getUsers = async () => {
-  users.value = await API.getUsers();
-};
+
 
 onMounted(async () => {
-  await getUsers();
+  await store.init();
 });
 </script>
 
 <template>
   <div>
-    <n-message-provider>
-      <img :src="logo" />
-
-      <pre v-if="state.debug" class="debug">{{ store }}</pre>
-      <Main v-if="!state.isConfigDialog"></Main>
-      <Config v-if="state.isConfigDialog" msg="Vite + Vue" />
-
-      <button @click="state.isConfigDialog = !state.isConfigDialog">
-        config
+    <div class="config">
+      <button @click="isConfigDialog = !isConfigDialog"> config
       </button>
+
+    </div>
+    <n-message-provider placement="bottom">
+      <img :src="logo" />
+      <div>
+        <input type="text" v-model="appName" placeholder="App Name" />
+        <input type="text" v-model="appUrl" placeholder="App URL" />
+        <button @click="store.initApps">init apps</button>
+        <button @click="addApp()">add app</button>
+      </div>
+
+      <Main v-if="!isConfigDialog"></Main>
+      <Config v-if="isConfigDialog" />
+
+
+
+
     </n-message-provider>
   </div>
 </template>
 
 <style scoped>
+.config {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  z-index: 10;
+}
+
 .debug {
   position: fixed;
   right: 0;

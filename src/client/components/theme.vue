@@ -1,32 +1,14 @@
 <script lang="ts" setup>
-import { useStore } from "../store/index";
+import { colors } from "@/client/definition";
 import { NCard, useMessage } from "naive-ui";
+import { useStore } from "../store/index";
 import type { Theme } from "../types/store";
-const colors = [
-  {
-    name: "default",
-    primary: "black",
-    accent: "gray",
-    background: "white",
-  },
-  {
-    name: "Blackboard",
-    primary: "#FFFDEA",
-    accent: "#5c5c5c",
-    background: "#1a1a1a",
-  },
-  {
-    name: "Monokai",
-    primary: "#d6d6d6",
-    accent: "#797979",
-    background: "#2e2e2e",
-  },
-];
+
 
 const store = useStore();
 const message = useMessage();
 
-const emitTheme = (color: Theme) => {
+const emitTheme = async (color: Theme) => {
   const { name, ...data } = color;
   document.documentElement.style.setProperty(
     "--background-primary",
@@ -34,7 +16,7 @@ const emitTheme = (color: Theme) => {
   );
   document.documentElement.style.setProperty("--txt-primary", data.primary);
   document.documentElement.style.setProperty("--accent", data.accent);
-  store.updateTheme(data);
+  await store.updateTheme(data);
   message.success(`Theme updated ${name}`, { duration: 3000 });
 };
 </script>
@@ -56,11 +38,14 @@ const emitTheme = (color: Theme) => {
 <style scoped>
 .theme-container {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* Two columns */
-  gap: 10px; /* Space between items */
+  grid-template-columns: repeat(2, 1fr);
+  /* Two columns */
+  gap: 10px;
+  /* Space between items */
   list-style-type: none;
   padding: 0;
 }
+
 .colors {
   display: flex;
   justify-content: center;
@@ -68,12 +53,15 @@ const emitTheme = (color: Theme) => {
   align-items: center;
   cursor: pointer;
 }
+
 .color-option {
   display: flex;
+
   & div {
     height: 10px;
     width: 30px;
   }
+
   &:hover {
     boder: 1px solid;
   }
