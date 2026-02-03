@@ -1,5 +1,7 @@
 -- init.sql
-CREATE DATABASE IF NOT EXISTS startora;
+SELECT format('CREATE DATABASE %I', 'startora')
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'startora')
+\gexec
 \c startora;
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
