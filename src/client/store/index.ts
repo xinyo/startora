@@ -24,7 +24,9 @@ export const useStore = defineStore("store", {
     async initSession() {
       // Load session from localStorage or API
       const session = JSON.parse(localStorage.getItem("session") || "{}");
-      if (session.id !== 0) {
+      
+      if (session.id) {
+        console.log("Loaded session:", session.id);
         this.session = session;
       } else {
         // Fetch from API if not found in localStorage
