@@ -1,26 +1,41 @@
 version: "3.8"
 
 services:
-  app:
+  backend:
     build: .
-    container_name: startora
+    container_name: startora-backend
     ports:
       - "3000:3000" # Node.js API
-      - "5173:5173" # Vite front-end (development mode)
-    volumes:
-      - ./src/db:/var/lib/postgresql/data # Mount PostgreSQL data directory inside the container
     environment:
       - NODE_ENV=production
-      - DB_HOST=localhost
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=password
-      - DB_NAME=startora
+      - PG_HOST=db
+      - PG_PORT=5432
+      - PG_USER=postgres
+      - PG_PASSWORD=password
+      - PG_DATABASE=startora
     depends_on:
-      - postgres
+      - db
+    networks:
+      - app-network
+
+  db:
+    image: postgres:16-alpine
+    container_name: startora-db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./src/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=startora
     networks:
       - app-network
 
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  pgdata:

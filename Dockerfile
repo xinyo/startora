@@ -1,39 +1,29 @@
 # Use official Node.js image
-FROM node:21
-
-# Install PostgreSQL
-RUN apt-get update && apt-get install -y postgresql postgresql-contrib
+FROM node:21-alpine
 
 # Set working directory for our app
 WORKDIR /app
 
-# Install dependencies for both client and server
-COPY package.json package-lock.json ./
-RUN npm install
+# Install pnpm
+RUN npm install -g pnpm
 
-# Copy the PostgreSQL initialization script
-COPY ./src/db/init.sql /docker-entrypoint-initdb.d/
+# Install dependencies for the server
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --prod
 
-# Copy server and client code
-COPY ./src/server ./server
-COPY ./src/client ./client
+# Copy server code
+COPY ./src/server ./src/server
 
 # Set up environment variables
 ENV NODE_ENV=production
-ENV DB_HOST=localhost
-ENV DB_PORT=5432
-ENV DB_USER=postgres
-ENV DB_PASSWORD=password
-ENV DB_NAME=startora
+ENV PG_HOST=db
+ENV PG_PORT=5432
+ENV PG_USER=postgres
+ENV PG_PASSWORD=password
+ENV PG_DATABASE=startora
 
-# Install dependencies for Vite (client-side)
-WORKDIR /app/client
-RUN npm install
+# Expose the backend port
+EXPOSE 3000
 
-# Expose the required ports (Node.js API and Vite dev server)
-EXPOSE 3000 5173
-
-# Start PostgreSQL, Node.js API, and Vite front-end on container start
-CMD service postgresql start && \
-    node /app/server/index.js & \
-    cd /app/client && npm run dev
+# Start Node.js API
+CMD ["node", "src/server/index.cjs"]
