@@ -1,12 +1,11 @@
--- init.sql
-SELECT format('CREATE DATABASE %I', 'startora')
-WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'startora')
-\gexec
-\c startora;
+-- init-node.sql
+-- Node.js compatible initialization script (no psql meta-commands)
+-- This file is used by the pg driver for programmatic database initialization
+
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
-  name VARCHAR(100),
-  email VARCHAR(100) UNIQUE NOT NULL
+  username VARCHAR(100) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL
 );
 
 -- create table for config for users

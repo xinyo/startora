@@ -34,9 +34,10 @@ export const getUser = async (
 };
 
 // Function to add a user
-export const addUser = async (name: string, email: string) => {
+export const addUser = async (username: string, password: string) => {
+  console.log("Adding user in api:", username, password);
   try {
-    const response = await axios.post(`${API_URL}/users`, { name, email });
+    const response = await axios.post(`${API_URL}/users`, { username, password });
     return response.data;
   } catch (error) {
     console.error("Error adding user:", error);

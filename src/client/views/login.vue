@@ -1,7 +1,9 @@
 <script lang="ts" setup>
 import { reactive, ref } from "vue";
 import { useMessage, FormInst } from "naive-ui";
+import { useStore } from "../store";
 
+const store = useStore();
 const formRef = ref<FormInst | null>(null);
 const message = useMessage();
 
@@ -36,8 +38,32 @@ const handleLogin = (e: MouseEvent) => {
   });
 };
 
-const handleResetPassword = () => {
-  message.info("Redirecting to reset password page...");
+const handleCreateUser = async () => {
+  formRef.value?.validate(async (errors) => {
+    if (!errors) {
+      // Validate password length
+      if (model.password.length < 6) {
+        message.error("Password must be at least 6 characters long");
+        return;
+      }
+      
+      try {
+        const result = await store.addUser(model.username, model.password);
+        message.success("User created successfully!");
+        console.log("User created:", result);
+        // Clear the form
+        model.username = "";
+        model.password = "";
+      } catch (error: any) {
+        const errorMsg = error.response?.data?.error || "Failed to create user";
+        message.error(errorMsg);
+        console.error("Error creating user:", error);
+      }
+    } else {
+      console.error(errors);
+      message.error("Please fill in the required fields");
+    }
+  });
 };
 </script>
 
@@ -67,8 +93,8 @@ const handleResetPassword = () => {
           <n-button type="primary" @click="handleLogin" block>
             Login
           </n-button>
-          <n-button text @click="handleResetPassword" class="reset-link">
-            Reset Password
+          <n-button @click="handleCreateUser" block secondary>
+            Create New User
           </n-button>
         </div>
       </n-form>
@@ -95,11 +121,6 @@ const handleResetPassword = () => {
   flex-direction: column;
   gap: 12px;
   margin-top: 12px;
-}
-
-.reset-link {
-  font-size: 14px;
-  align-self: flex-end;
 }
 </style>
 

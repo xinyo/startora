@@ -55,6 +55,16 @@ export const useStore = defineStore("store", {
         console.error("Failed to fetch user's apps:", error);
       }
     },
+    async addUser(name: string, password: string) {
+      try {
+        const response = await API.addUser(name, password);
+        console.log("Added user:", response);
+        return response;
+      } catch (error) {
+        console.error("Failed to add user:", error);
+        throw error;
+      }
+    },
     async updateTheme(newValue: Omit<Theme, "name">) {
       this.theme = newValue;
       // save to db

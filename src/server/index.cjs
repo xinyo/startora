@@ -1,38 +1,24 @@
 // index.js
 
+require('dotenv').config({ path: '.env.dev' });
 const express = require("express");
 const cors = require("cors");
 const { Client } = require("pg");
-const prompts = require("prompts");
+const fs = require("fs");
+const path = require("path");
+const bcrypt = require("bcrypt");
 const app = express();
 
 app.use(cors()); // This allows cross-origin requests from any origin
 app.use(express.json()); // Middleware to parse JSON request bodies
 
 const startServer = async () => {
-  let password = process.env.PG_PASSWORD || process.env.PGPASSWORD;
-
-  if (!password) {
-    const response = await prompts({
-      type: "password",
-      name: "value",
-      message: "PostgreSQL password:",
-    });
-
-    // Handle Ctrl+C or empty submission
-    if (typeof response.value === "undefined") {
-      console.log("\nInput aborted.");
-      process.exit(0);
-    }
-    password = response.value;
-  }
-
   const client = new Client({
-    user: process.env.PG_USER || "postgres",
-    host: process.env.PG_HOST || "localhost",
-    database: process.env.PG_DATABASE || "startora",
-    password,
-    port: process.env.PG_PORT ? Number(process.env.PG_PORT) : 5432,
+    user: process.env.DB_USER || "postgres",
+    host: process.env.DB_HOST || "localhost",
+    database: process.env.DB_NAME || "startora",
+    password: process.env.DB_PASSWORD || "",
+    port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432,
   });
 
   try {
@@ -40,6 +26,29 @@ const startServer = async () => {
     console.log("Connected to PostgreSQL");
   } catch (err) {
     console.error("Error connecting to PostgreSQL", err);
+    process.exit(1);
+  }
+
+  // Check if users table exists, if not initialize the database
+  try {
+    const result = await client.query(
+      "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'users')"
+    );
+    const tableExists = result.rows[0].exists;
+
+    if (!tableExists) {
+      console.log("Users table not found. Initializing database...");
+      const initSqlPath = path.join(__dirname, '..', 'db', 'init-node.sql');
+      const initSql = fs.readFileSync(initSqlPath, 'utf8');
+      
+      // Execute the init.sql script
+      await client.query(initSql);
+      console.log("Database initialized successfully");
+    } else {
+      console.log("Database tables already exist");
+    }
+  } catch (err) {
+    console.error("Error initializing database", err);
     process.exit(1);
   }
 
@@ -123,15 +132,34 @@ app.put("/user/:userid/apps/:appId", async (req, res) => {
 
 // Create a route to add a user
 app.post("/users", async (req, res) => {
-  const { name, email } = req.body;
+  const { username, password } = req.body;
+  
+  // Validate input
+  if (!username || !password) {
+    return res.status(400).json({ error: "Username and password are required" });
+  }
+  
+  // if (password.length < 6) {
+  //   return res.status(400).json({ error: "Password must be at least 6 characters long" });
+  // }
+  
   try {
+    // Hash the password with bcrypt
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    
+    // Save user with hashed password
     const result = await client.query(
-      "INSERT INTO users (name, email) VALUES ($1, $2) RETURNING *",
-      [name, email]
+      "INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id, username",
+      [username, hashedPassword]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    if (err.code === '23505') { // Unique violation
+      res.status(409).json({ error: "Username already exists" });
+    } else {
+      res.status(500).json({ error: err.message });
+    }
   }
 });
 
