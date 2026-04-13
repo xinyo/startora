@@ -1,6 +1,6 @@
-# Gemini Developer Guide - Startora
+# AI Agent Guide - Startora
 
-This document serves as a guide for AI assistants (like Gemini) to understand the **Startora** project structure, architecture, and development patterns.
+This document serves as a comprehensive guide for AI assistants and agents to understand the **Startora** project structure, architecture, and development patterns.
 
 ## 🚀 Project Overview
 
@@ -48,11 +48,11 @@ src/
 
 ## 📂 Key Files for Development
 
-- **[App.vue](file:///Users/xinyo/dev/github.com/startora/src/client/App.vue)**: Root frontend component.
-- **[main.vue](file:///Users/xinyo/dev/github.com/startora/src/client/components/main.vue)**: Primary dashboard display.
-- **[config.vue](file:///Users/xinyo/dev/github.com/startora/src/client/components/config.vue)**: App management interface (add/edit/delete).
-- **[index.cjs](file:///Users/xinyo/dev/github.com/startora/src/server/index.cjs)**: Main server file containing API routes and DB logic.
-- **[init.sql](file:///Users/xinyo/dev/github.com/startora/src/db/init.sql)**: Database schema.
+- **[App.vue](file:///e:/doc/dev/startora/src/client/App.vue)**: Root frontend component.
+- **[main.vue](file:///e:/doc/dev/startora/src/client/components/main.vue)**: Primary dashboard display.
+- **[config.vue](file:///e:/doc/dev/startora/src/client/components/config.vue)**: App management interface (add/edit/delete).
+- **[index.cjs](file:///e:/doc/dev/startora/src/server/index.cjs)**: Main server file containing API routes and DB logic.
+- **[init.sql](file:///e:/doc/dev/startora/src/db/init.sql)**: Database schema.
 
 ## 🔄 Development Workflow
 
