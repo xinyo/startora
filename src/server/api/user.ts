@@ -1,6 +1,17 @@
 import axios from "axios";
 import { API_URL } from "./config";
 
+// Function to login and get JWT token
+export const login = async (username: string, password: string) => {
+  try {
+    const response = await axios.post(`${API_URL}/login`, { username, password });
+    return response.data;
+  } catch (error) {
+    console.error("Error logging in:", error);
+    throw error;
+  }
+};
+
 // Function to fetch users
 export const getUsers = async (): Promise<
   { id: number; name: string; email: string }[]

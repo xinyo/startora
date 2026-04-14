@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "start-server": "node src/server/index.cjs",
+    "start-server": "tsx src/server/index.ts",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview"
   },
@@ -15,16 +15,23 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2",
     "pg": "^8.13.1",
     "pinia": "^2.2.6",
     "vue": "^3.5.12",
     "vue-router": "4"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.6.0",
+    "@types/pg": "^8.20.0",
     "@vicons/fluent": "^0.13.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "naive-ui": "^2.40.1",
+    "tsx": "^4.21.0",
     "typescript": "~5.6.2",
     "vite": "^6.0.5",
     "vue-tsc": "^2.1.8"

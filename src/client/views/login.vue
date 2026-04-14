@@ -25,12 +25,27 @@ const rules = {
   }
 };
 
-const handleLogin = (e: MouseEvent) => {
+const handleLogin = async (e: MouseEvent) => {
   e.preventDefault();
-  formRef.value?.validate((errors) => {
+  formRef.value?.validate(async (errors) => {
     if (!errors) {
-      message.success("Login logic would go here");
-      console.log("Login with:", model.username, model.password);
+      try {
+        message.loading("Logging in...");
+        const result = await store.login(model.username, model.password);
+        message.destroyAll();
+        message.success("Login successful!");
+        console.log("Login with:", model.username, model.password);
+        
+        // Redirect to home page after successful login
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 500);
+      } catch (error: any) {
+        message.destroyAll();
+        const errorMsg = error.response?.data?.error || "Login failed";
+        message.error(errorMsg);
+        console.error("Login error:", error);
+      }
     } else {
       console.error(errors);
       message.error("Please fill in the required fields");
@@ -42,10 +57,10 @@ const handleCreateUser = async () => {
   formRef.value?.validate(async (errors) => {
     if (!errors) {
       // Validate password length
-      if (model.password.length < 6) {
-        message.error("Password must be at least 6 characters long");
-        return;
-      }
+      // if (model.password.length < 6) {
+      //   message.error("Password must be at least 6 characters long");
+      //   return;
+      // }
       
       try {
         const result = await store.addUser(model.username, model.password);
@@ -55,7 +70,7 @@ const handleCreateUser = async () => {
         model.username = "";
         model.password = "";
       } catch (error: any) {
-        const errorMsg = error.response?.data?.error || "Failed to create user";
+        const errorMsg = error.response?.data?.message || "Failed to create user";
         message.error(errorMsg);
         console.error("Error creating user:", error);
       }

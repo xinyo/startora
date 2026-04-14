@@ -3,21 +3,32 @@
 <cite>
 **Referenced Files in This Document**
 - [package.json](file://package.json)
+- [pnpm-workspace.yaml](file://pnpm-workspace.yaml)
+- [pnpm-lock.yaml](file://pnpm-lock.yaml)
 - [vite.config.ts](file://vite.config.ts)
 - [tsconfig.json](file://tsconfig.json)
 - [tsconfig.app.json](file://tsconfig.app.json)
 - [tsconfig.node.json](file://tsconfig.node.json)
 - [Dockerfile](file://Dockerfile)
 - [docker-compose.yml](file://docker-compose.yml)
+- [README.md](file://README.md)
+- [src/server/index.cjs](file://src/server/index.cjs)
 - [src/client/main.ts](file://src/client/main.ts)
 - [src/client/App.vue](file://src/client/App.vue)
 - [src/client/router.ts](file://src/client/router.ts)
 - [src/client/store/index.ts](file://src/client/store/index.ts)
 - [src/client/views/Home.vue](file://src/client/views/Home.vue)
 - [src/client/components/main.vue](file://src/client/components/main.vue)
-- [src/server/index.cjs](file://src/server/index.cjs)
 - [src/db/init.sql](file://src/db/init.sql)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Updated package management infrastructure from npm to pnpm workspace configuration
+- Enhanced development tooling with standardized environment variables
+- Updated Docker configuration to support pnpm-based workflow
+- Revised build system documentation to reflect pnpm commands
+- Added pnpm workspace configuration details
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -32,7 +43,9 @@
 10. [Appendices](#appendices)
 
 ## Introduction
-This document describes Startora’s development workflow and build processes. It covers local development setup, environment configuration, hot-reloading development server, debugging techniques, build system with Vite and TypeScript, asset processing, production builds, Docker containerization, deployment strategies, testing and code quality practices, CI considerations, troubleshooting, performance optimization, and contribution best practices.
+This document describes Startora's development workflow and build processes. It covers local development setup with pnpm workspace configuration, environment configuration, hot-reloading development server, debugging techniques, build system with Vite and TypeScript, asset processing, production builds, Docker containerization, deployment strategies, testing and code quality practices, CI considerations, troubleshooting, performance optimization, and contribution best practices.
+
+**Updated** The project has been upgraded with pnpm workspace configuration for improved dependency management and standardized development workflow.
 
 ## Project Structure
 Startora is a full-stack web application composed of:
@@ -40,6 +53,7 @@ Startora is a full-stack web application composed of:
 - A Node.js/Express server exposing REST endpoints backed by PostgreSQL
 - Build tooling via Vite and TypeScript compiler
 - Containerization with Docker and Docker Compose
+- **Enhanced** pnpm workspace configuration for dependency management
 
 ```mermaid
 graph TB
@@ -59,6 +73,8 @@ DB_init["src/db/init.sql"]
 end
 subgraph "Tooling"
 Pkg["package.json"]
+Pnpm["pnpm-workspace.yaml"]
+PnpmLock["pnpm-lock.yaml"]
 VCfg["vite.config.ts"]
 TSRoot["tsconfig.json"]
 TSApp["tsconfig.app.json"]
@@ -77,6 +93,7 @@ C_store --> S_index
 S_index --> DB_init
 Pkg --> VCfg
 Pkg --> TSRoot
+Pnpm --> PnpmLock
 TSRoot --> TSApp
 TSRoot --> TSNode
 Df --> Dc
@@ -89,9 +106,11 @@ Df --> Dc
 - [src/client/store/index.ts:1-91](file://src/client/store/index.ts#L1-L91)
 - [src/client/views/Home.vue:1-62](file://src/client/views/Home.vue#L1-L62)
 - [src/client/components/main.vue:1-109](file://src/client/components/main.vue#L1-L109)
-- [src/server/index.cjs:1-173](file://src/server/index.cjs#L1-L173)
+- [src/server/index.cjs:1-199](file://src/server/index.cjs#L1-L199)
 - [src/db/init.sql:1-26](file://src/db/init.sql#L1-L26)
-- [package.json:1-31](file://package.json#L1-L31)
+- [package.json:1-33](file://package.json#L1-L33)
+- [pnpm-workspace.yaml:1-3](file://pnpm-workspace.yaml#L1-L3)
+- [pnpm-lock.yaml:1-800](file://pnpm-lock.yaml#L1-L800)
 - [vite.config.ts:1-13](file://vite.config.ts#L1-L13)
 - [tsconfig.json:1-8](file://tsconfig.json#L1-L8)
 - [tsconfig.app.json:1-32](file://tsconfig.app.json#L1-L32)
@@ -100,7 +119,9 @@ Df --> Dc
 - [docker-compose.yml:1-27](file://docker-compose.yml#L1-L27)
 
 **Section sources**
-- [package.json:1-31](file://package.json#L1-L31)
+- [package.json:1-33](file://package.json#L1-L33)
+- [pnpm-workspace.yaml:1-3](file://pnpm-workspace.yaml#L1-L3)
+- [pnpm-lock.yaml:1-800](file://pnpm-lock.yaml#L1-L800)
 - [vite.config.ts:1-13](file://vite.config.ts#L1-L13)
 - [tsconfig.json:1-8](file://tsconfig.json#L1-L8)
 - [tsconfig.app.json:1-32](file://tsconfig.app.json#L1-L32)
@@ -114,22 +135,24 @@ Df --> Dc
 - Server endpoints: Express routes for users, user apps, and theme configuration backed by PostgreSQL.
 - Database initialization: SQL script creating tables and ensuring database existence.
 - Tooling: Vite for dev/build, TypeScript configuration for app and node contexts, and scripts in package.json.
+- **Enhanced** Package management: pnpm workspace configuration for efficient dependency management.
 
 Key responsibilities:
 - Local development: Hot reload via Vite, server auto-start, and environment-driven configuration.
 - Production build: Type-check then bundle via Vite for the client; server remains Node/CJS.
 - Containerization: Multi-stage-like setup with PostgreSQL preinstalled, DB init script, and combined client/server runtime.
+- **Enhanced** Dependency management: pnpm workspace for consistent dependency resolution and faster installations.
 
 **Section sources**
 - [src/client/main.ts:1-11](file://src/client/main.ts#L1-L11)
 - [src/client/router.ts:1-24](file://src/client/router.ts#L1-L24)
 - [src/client/store/index.ts:1-91](file://src/client/store/index.ts#L1-L91)
-- [src/server/index.cjs:1-173](file://src/server/index.cjs#L1-L173)
+- [src/server/index.cjs:1-199](file://src/server/index.cjs#L1-L199)
 - [src/db/init.sql:1-26](file://src/db/init.sql#L1-L26)
 - [package.json:6-11](file://package.json#L6-L11)
 
 ## Architecture Overview
-The system comprises a Vue 3 SPA served by Vite during development and built for production, paired with a Node/Express API server accessing a PostgreSQL database. Docker and Docker Compose orchestrate local environments.
+The system comprises a Vue 3 SPA served by Vite during development and built for production, paired with a Node/Express API server accessing a PostgreSQL database. Docker and Docker Compose orchestrate local environments with pnpm-based dependency management.
 
 ```mermaid
 graph TB
@@ -146,6 +169,10 @@ Router["Vue Router"]
 Server["Express Routes"]
 DB["PostgreSQL Tables"]
 end
+subgraph "Package Management"
+PNPM["pnpm Workspace"]
+Lock["pnpm-lock.yaml"]
+end
 Dev --> |"Browser"| FE
 FE --> |"HTTP"| API
 API --> |"SQL"| DB
@@ -154,16 +181,19 @@ Store --> Client
 Router --> Client
 API -.-> PG
 DB -.-> PG
+PNPM --> Lock
 ```
 
 **Diagram sources**
 - [docker-compose.yml:1-27](file://docker-compose.yml#L1-L27)
 - [Dockerfile:1-40](file://Dockerfile#L1-L40)
-- [src/server/index.cjs:1-173](file://src/server/index.cjs#L1-L173)
+- [src/server/index.cjs:1-199](file://src/server/index.cjs#L1-L199)
 - [src/client/main.ts:1-11](file://src/client/main.ts#L1-L11)
 - [src/client/router.ts:1-24](file://src/client/router.ts#L1-L24)
 - [src/client/store/index.ts:1-91](file://src/client/store/index.ts#L1-L91)
 - [src/db/init.sql:1-26](file://src/db/init.sql#L1-L26)
+- [pnpm-workspace.yaml:1-3](file://pnpm-workspace.yaml#L1-L3)
+- [pnpm-lock.yaml:1-800](file://pnpm-lock.yaml#L1-L800)
 
 ## Detailed Component Analysis
 
@@ -233,7 +263,7 @@ Client->>API : GET /users
 API->>DB : SELECT users
 DB-->>API : Rows
 API-->>Client : JSON users
-Client->>API : POST /users {name,email}
+Client->>API : POST /users {username,password}
 API->>DB : INSERT users
 DB-->>API : New row
 API-->>Client : Created user
@@ -248,10 +278,10 @@ API-->>Client : Updated app
 ```
 
 **Diagram sources**
-- [src/server/index.cjs:46-136](file://src/server/index.cjs#L46-L136)
+- [src/server/index.cjs:55-131](file://src/server/index.cjs#L55-L131)
 
 **Section sources**
-- [src/server/index.cjs:1-173](file://src/server/index.cjs#L1-L173)
+- [src/server/index.cjs:1-199](file://src/server/index.cjs#L1-L199)
 
 ### Database Initialization
 - Ensures the target database exists and creates tables for users, user_config, and user_apps.
@@ -281,7 +311,7 @@ CreateUserApps --> End
 ### Build System and Tooling
 - Scripts:
   - dev: starts Vite dev server
-  - server: runs Node server
+  - start-server: runs Node server
   - build: type-check then Vite build
   - preview: serves built assets locally
 - Vite configuration:
@@ -291,12 +321,15 @@ CreateUserApps --> End
   - Root references app and node configs
   - App config targets modern JS, bundler mode, strictness, and DOM libs
   - Node config targets Node runtime and bundler mode
+- **Enhanced** Package management:
+  - pnpm workspace configuration for dependency isolation
+  - Lockfile for reproducible builds
 
 ```mermaid
 flowchart TD
-Dev(["Developer"]) --> RunDev["npm run dev"]
+Dev(["Developer"]) --> RunDev["pnpm run dev"]
 RunDev --> ViteDev["Vite Dev Server"]
-Dev --> RunBuild["npm run build"]
+Dev --> RunBuild["pnpm run build"]
 RunBuild --> TSC["vue-tsc --noEmit"]
 TSC --> ViteBuild["Vite Build"]
 ViteBuild --> Dist["Dist Output"]
@@ -307,6 +340,8 @@ ViteBuild --> Dist["Dist Output"]
 - [vite.config.ts:1-13](file://vite.config.ts#L1-L13)
 - [tsconfig.app.json:1-32](file://tsconfig.app.json#L1-L32)
 - [tsconfig.node.json:1-25](file://tsconfig.node.json#L1-L25)
+- [pnpm-workspace.yaml:1-3](file://pnpm-workspace.yaml#L1-L3)
+- [pnpm-lock.yaml:1-800](file://pnpm-lock.yaml#L1-L800)
 
 **Section sources**
 - [package.json:6-11](file://package.json#L6-L11)
@@ -314,6 +349,8 @@ ViteBuild --> Dist["Dist Output"]
 - [tsconfig.json:1-8](file://tsconfig.json#L1-L8)
 - [tsconfig.app.json:1-32](file://tsconfig.app.json#L1-L32)
 - [tsconfig.node.json:1-25](file://tsconfig.node.json#L1-L25)
+- [pnpm-workspace.yaml:1-3](file://pnpm-workspace.yaml#L1-L3)
+- [pnpm-lock.yaml:1-800](file://pnpm-lock.yaml#L1-L800)
 
 ### Containerization and Deployment
 - Dockerfile:
@@ -353,9 +390,12 @@ App --> |"Volume"| VolPG["./src/db:/var/lib/postgresql/data"]
 
 ## Dependency Analysis
 - Client depends on Vue, Vue Router, Pinia, Naive UI, and Axios for HTTP.
-- Server depends on Express, CORS, pg (PostgreSQL client), and prompts for interactive password input.
+- Server depends on Express, CORS, pg (PostgreSQL client), and bcrypt for password hashing.
 - Build-time dependencies include Vite, @vitejs/plugin-vue, TypeScript, and vue-tsc.
-- Path alias @ resolves to src for both client and TypeScript configs.
+- **Enhanced** Package management:
+  - pnpm workspace for dependency isolation
+  - Lockfile for reproducible builds
+  - Standardized environment variables via dotenv
 
 ```mermaid
 graph LR
@@ -368,26 +408,35 @@ P --> Axios["axios"]
 P --> Express["express"]
 P --> Cors["cors"]
 P --> Pg["pg"]
-P --> Prompts["prompts"]
+P --> Bcrypt["bcrypt"]
 P --> Vite["vite"]
 P --> VueTSC["vue-tsc"]
 P --> VuePlugin["@vitejs/plugin-vue"]
+PNPM["pnpm-workspace.yaml"] --> PnpmLock["pnpm-lock.yaml"]
 ```
 
 **Diagram sources**
-- [package.json:12-29](file://package.json#L12-L29)
+- [package.json:12-31](file://package.json#L12-L31)
+- [pnpm-workspace.yaml:1-3](file://pnpm-workspace.yaml#L1-3)
+- [pnpm-lock.yaml:1-800](file://pnpm-lock.yaml#L1-L800)
 
 **Section sources**
-- [package.json:12-29](file://package.json#L12-L29)
+- [package.json:12-31](file://package.json#L12-L31)
+- [pnpm-workspace.yaml:1-3](file://pnpm-workspace.yaml#L1-L3)
+- [pnpm-lock.yaml:1-800](file://pnpm-lock.yaml#L1-L800)
 - [tsconfig.app.json:26-28](file://tsconfig.app.json#L26-L28)
 
 ## Performance Considerations
 - Prefer lazy-loading heavy components and routes to reduce initial bundle size.
 - Keep TypeScript strictness for early bug detection; avoid unnecessary runtime checks.
 - Minimize large payloads in user_apps and user_config; consider pagination for lists.
-- Use Vite’s built-in code splitting and dynamic imports where appropriate.
+- Use Vite's built-in code splitting and dynamic imports where appropriate.
 - Optimize database queries with indexes on frequently filtered columns (e.g., user_id).
 - Cache static assets and leverage browser caching headers in production.
+- **Enhanced** Dependency optimization:
+  - Use pnpm's deduplication for smaller bundle sizes
+  - Leverage workspace isolation for better dependency resolution
+  - Utilize lockfile for consistent performance across environments
 
 ## Troubleshooting Guide
 Common issues and resolutions:
@@ -395,7 +444,7 @@ Common issues and resolutions:
   - Verify environment variables for DB credentials and host/port.
   - Confirm the DB service is reachable and initialized.
 - Vite dev server not starting:
-  - Ensure Node.js and npm are installed and PATH is correct.
+  - Ensure Node.js and pnpm are installed and PATH is correct.
   - Clear node_modules and reinstall dependencies if needed.
 - Hot reload not triggering:
   - Check file watching limits and firewall settings.
@@ -409,41 +458,57 @@ Common issues and resolutions:
 - API 404/500 errors:
   - Validate route paths and parameter binding.
   - Inspect server logs for SQL exceptions.
+- **Enhanced** Package management issues:
+  - Clear node_modules and reinstall with pnpm for consistent dependency resolution.
+  - Verify pnpm workspace configuration is properly set up.
+  - Check pnpm-lock.yaml for dependency conflicts.
 
 **Section sources**
-- [src/server/index.cjs:12-44](file://src/server/index.cjs#L12-L44)
+- [src/server/index.cjs:15-30](file://src/server/index.cjs#L15-L30)
 - [docker-compose.yml:7-9](file://docker-compose.yml#L7-L9)
-- [Dockerfile:33-39](file://Dockerfile#L33-L39)
+- [Dockerfile:37-39](file://Dockerfile#L37-L39)
+- [pnpm-workspace.yaml:1-3](file://pnpm-workspace.yaml#L1-L3)
+- [pnpm-lock.yaml:1-800](file://pnpm-lock.yaml#L1-L800)
 
 ## Conclusion
-Startora’s development workflow leverages Vite for fast iteration, TypeScript for safety, and a clear separation between client and server. Docker simplifies local environment provisioning and aligns with production deployment patterns. Following the outlined scripts, configurations, and best practices ensures smooth development, reliable builds, and predictable deployments.
+Startora's development workflow leverages Vite for fast iteration, TypeScript for safety, and a clear separation between client and server. The upgrade to pnpm workspace configuration enhances dependency management and build consistency. Docker simplifies local environment provisioning and aligns with production deployment patterns. Following the outlined scripts, configurations, and best practices ensures smooth development, reliable builds, and predictable deployments.
+
+**Updated** The pnpm workspace configuration provides improved dependency isolation and faster installations, while standardized environment variables ensure consistent development across different machines.
 
 ## Appendices
 
 ### Local Development Setup
 - Install dependencies:
-  - Client and server dependencies are installed via package manager.
+  - **Enhanced** Use pnpm for consistent dependency resolution: `pnpm install`
+  - Alternative: npm or yarn support maintained for compatibility
 - Start services:
   - Run the Vite dev server for the frontend.
   - Run the Node server for the backend.
 - Environment variables:
   - Configure database credentials and port via environment variables.
+  - **Enhanced** Standardized environment variable handling via dotenv.
 - Hot reloading:
   - Vite automatically refreshes the browser on file changes.
 
 **Section sources**
 - [package.json:6-11](file://package.json#L6-L11)
-- [src/server/index.cjs:12-44](file://src/server/index.cjs#L12-L44)
+- [src/server/index.cjs:3](file://src/server/index.cjs#L3)
+- [README.md:65-71](file://README.md#L65-L71)
 
 ### Build and Preview
 - Type-check and build:
   - Use the build script to compile TypeScript and bundle the client.
 - Preview production build:
   - Use the preview script to serve built assets locally.
+- **Enhanced** Package management:
+  - pnpm workspace ensures consistent dependency versions across environments.
+  - Lockfile guarantees reproducible builds.
 
 **Section sources**
 - [package.json:9-10](file://package.json#L9-L10)
 - [tsconfig.app.json:1-32](file://tsconfig.app.json#L1-L32)
+- [pnpm-workspace.yaml:1-3](file://pnpm-workspace.yaml#L1-L3)
+- [pnpm-lock.yaml:1-800](file://pnpm-lock.yaml#L1-L800)
 
 ### Testing and Code Quality
 - Recommended practices:
@@ -451,16 +516,22 @@ Startora’s development workflow leverages Vite for fast iteration, TypeScript 
   - Add integration tests for server endpoints.
   - Enforce linting and formatting standards in CI.
   - Keep TypeScript strict mode enabled.
+- **Enhanced** Dependency management:
+  - Use pnpm for consistent test environment setup.
+  - Leverage workspace isolation for isolated test runs.
 
 ### Continuous Integration
 - Typical pipeline stages:
-  - Install dependencies
+  - Install dependencies with pnpm
   - Type-check
   - Run tests
   - Build artifacts
   - Optional: push images to registry
 - Secrets management:
   - Inject database credentials and tokens via CI environment variables.
+- **Enhanced** Build consistency:
+  - Use pnpm-lock.yaml for reproducible builds in CI.
+  - Leverage workspace configuration for consistent dependency resolution.
 
 ### Contribution Best Practices
 - Branching strategy:
@@ -471,3 +542,7 @@ Startora’s development workflow leverages Vite for fast iteration, TypeScript 
   - Focus on correctness, readability, and performance.
 - Documentation updates:
   - Update README and inline comments for significant changes.
+- **Enhanced** Package management:
+  - Update pnpm-lock.yaml when adding/removing dependencies.
+  - Maintain pnpm workspace configuration for consistency.
+  - Follow pnpm best practices for dependency management.

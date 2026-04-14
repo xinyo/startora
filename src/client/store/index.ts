@@ -14,12 +14,15 @@ export const useStore = defineStore("store", {
       isActive: false,
     },
     theme: { primary: "", accent: "", background: "" },
+    token: localStorage.getItem("token") || "",
   }),
   getters: {},
   actions: {
     async init() {
       this.initSession();
-      this.initApps();
+      if (this.token) {
+        this.initApps();
+      }
     },
     async initSession() {
       // Load session from localStorage or API
@@ -45,6 +48,39 @@ export const useStore = defineStore("store", {
           console.error("Failed to fetch session:", error);
         }
       }
+    },
+    async login(username: string, password: string) {
+      try {
+        const response = await API.login(username, password);
+        if (response.success && response.token) {
+          this.token = response.token;
+          this.session.id = response.user.id;
+          this.session.name = response.user.username;
+          
+          // Store token in localStorage
+          localStorage.setItem("token", response.token);
+          localStorage.setItem("session", JSON.stringify(this.session));
+          
+          console.log("Login successful:", response.user);
+          return response;
+        }
+      } catch (error) {
+        console.error("Failed to login:", error);
+        throw error;
+      }
+    },
+    async logout() {
+      this.token = "";
+      this.session = {
+        id: 0,
+        name: "",
+        email: "",
+        avatar: "",
+        isAdmin: false,
+        isActive: false,
+      };
+      localStorage.removeItem("token");
+      localStorage.removeItem("session");
     },
     async initApps() {
       try {
