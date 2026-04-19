@@ -26,7 +26,8 @@ const addApp = async () => {
 };
 
 onMounted(async () => {
-  await store.init();
+  await store.ensureInitialized();
+  await store.initApps();
 });
 </script>
 

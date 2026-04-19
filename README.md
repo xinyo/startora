@@ -8,8 +8,6 @@ Startora is a modern personal start page/navigation app built with Vue 3 + TypeS
 
 - **App management**: Add, edit, and remove shortcut apps (name, URL).
 - **Data persistence**: Store user data and app configuration in PostgreSQL.
-- **Modern UI**: Built with Naive UI for a clean experience.
-- **Full-stack workflow**: Frontend and backend run together via Concurrently.
 - **Type safety**: TypeScript across the frontend with shared types.
 
 ## 🛠 Tech Stack
@@ -30,30 +28,6 @@ Startora is a modern personal start page/navigation app built with Vue 3 + TypeS
 ### Database
 - **Database**: [PostgreSQL](https://www.postgresql.org/)
 
-## 📂 Project Structure
-
-```
-startora/
-├── src/
-│   ├── client/           # Frontend source
-│   │   ├── assets/       # Static assets
-│   │   ├── components/   # Vue components (Login, Main, Config, etc.)
-│   │   ├── store/        # Pinia stores
-│   │   ├── types/        # TypeScript type definitions
-│   │   ├── App.vue       # Root component
-│   │   └── main.ts       # Frontend entry
-│   ├── server/           # Backend source
-│   │   ├── api.ts        # API client
-│   │   └── index.cjs     # Express entry
-│   └── db/               # Database scripts
-│       └── init.sql      # Database init SQL
-├── .vscode/              # VS Code config
-├── public/               # Public assets
-├── docker-compose.yml    # Docker compose file
-├── package.json          # Scripts and dependencies
-├── vite.config.ts        # Vite config
-└── ...
-```
 
 ## 🚀 Quick Start
 
@@ -130,17 +104,4 @@ npm run build
 - **`src/client`**: Frontend logic. `components/main.vue` is the main display; `components/config.vue` handles configuration.
 - **`src/server`**: Express server providing REST APIs for user and app CRUD operations.
 - **`src/db`**: SQL schema and initialization scripts.
-
-## 🤝 Contributing
-
-Issues and pull requests are welcome.
-
-1. Fork the repo
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a pull request
-
-## 📄 License
-
-待补充
+ 

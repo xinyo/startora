@@ -7,6 +7,11 @@ import path from 'path';
 import bcrypt from 'bcrypt';
 import { fileURLToPath } from 'url';
 import { handleLogin, authenticateToken } from './jwt';
+import {
+  ensureAuthenticatedUserMatchesParam,
+  handleLogout,
+  handleRefresh,
+} from './auth/service';
 
 // ESM equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -18,7 +23,10 @@ dotenv.config({ path: path.join(__dirname, '../../.env.dev') });
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+  credentials: true,
+}));
 app.use(express.json());
 
 const startServer = async () => {
@@ -38,24 +46,13 @@ const startServer = async () => {
     process.exit(1);
   }
 
-  // Check if users table exists, if not initialize the database
+  // Ensure schema exists for local development
   try {
-    const result = await client.query(
-      "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'users')"
-    );
-    const tableExists = result.rows[0].exists;
+    const initSqlPath = path.join(__dirname, '..', 'db', 'init.sql');
+    const initSql = fs.readFileSync(initSqlPath, 'utf8');
 
-    if (!tableExists) {
-      console.log('Users table not found. Initializing database...');
-      const initSqlPath = path.join(__dirname, '..', 'db', 'init-node.sql');
-      const initSql = fs.readFileSync(initSqlPath, 'utf8');
-
-      // Execute the init.sql script
-      await client.query(initSql);
-      console.log('Database initialized successfully');
-    } else {
-      console.log('Database tables already exist');
-    }
+    await client.query(initSql);
+    console.log('Database schema ensured successfully');
   } catch (err) {
     console.error('Error initializing database', err);
     process.exit(1);
@@ -64,6 +61,14 @@ const startServer = async () => {
   // Login route - generates JWT token
   app.post('/login', async (req: Request, res: Response) => {
     await handleLogin(req, res, client);
+  });
+
+  app.post('/auth/refresh', async (req: Request, res: Response) => {
+    await handleRefresh(req, res, client);
+  });
+
+  app.post('/auth/logout', async (req: Request, res: Response) => {
+    await handleLogout(req, res, client);
   });
 
   // Create a route to get all users
@@ -93,7 +98,7 @@ const startServer = async () => {
   });
 
   // Get user's apps (protected route)
-  app.get('/user/:userid/apps', authenticateToken, async (req: Request, res: Response) => {
+  app.get('/user/:userid/apps', authenticateToken, ensureAuthenticatedUserMatchesParam(), async (req: Request, res: Response) => {
     const { userid } = req.params;
     try {
       const result = await client.query(
@@ -107,7 +112,7 @@ const startServer = async () => {
   });
 
   // Add an app to user's apps (protected route)
-  app.post('/user/:userid/apps', authenticateToken, async (req: Request, res: Response) => {
+  app.post('/user/:userid/apps', authenticateToken, ensureAuthenticatedUserMatchesParam(), async (req: Request, res: Response) => {
     const { userid } = req.params;
     const { appName, appData } = req.body;
     const app_name = appName;
@@ -126,7 +131,7 @@ const startServer = async () => {
   });
 
   // Update a user's app (protected route)
-  app.put('/user/:userid/apps/:appId', authenticateToken, async (req: Request, res: Response) => {
+  app.put('/user/:userid/apps/:appId', authenticateToken, ensureAuthenticatedUserMatchesParam(), async (req: Request, res: Response) => {
     const { userid, appId } = req.params;
     const { appName, appData } = req.body;
     try {
@@ -173,11 +178,13 @@ const startServer = async () => {
 
   // Create a route to save theme to current user's user_config table (protected route)
   app.post('/theme', authenticateToken, async (req: Request, res: Response) => {
-    const { user_id, theme } = req.body;
+    const { theme, config } = req.body;
+    const userId = (req as any).user.userId;
+    const nextConfig = theme ?? config ?? req.body;
     try {
       const result = await client.query(
-        'INSERT INTO user_config (user_id, theme) VALUES ($1, $2) RETURNING *',
-        [user_id, theme]
+        'INSERT INTO user_config (user_id, config) VALUES ($1, $2) RETURNING *',
+        [userId, nextConfig]
       );
       res.status(201).json(result.rows[0]);
     } catch (err: any) {
@@ -187,11 +194,11 @@ const startServer = async () => {
 
   // Get theme of current user (protected route)
   app.get('/theme', authenticateToken, async (req: Request, res: Response) => {
-    const { user_id } = req.query;
+    const userId = (req as any).user.userId;
     try {
       const result = await client.query(
         'SELECT * FROM user_config WHERE user_id = $1',
-        [user_id]
+        [userId]
       );
       res.status(200).json(result.rows);
     } catch (err: any) {

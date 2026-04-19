@@ -1,9 +1,12 @@
 <script lang="ts" setup>
 import { reactive, ref } from "vue";
 import { useMessage, FormInst } from "naive-ui";
+import { useRouter } from "vue-router";
+import { navigateAfterLogin } from "../lib/login-navigation";
 import { useStore } from "../store";
 
 const store = useStore();
+const router = useRouter();
 const formRef = ref<FormInst | null>(null);
 const message = useMessage();
 
@@ -35,11 +38,7 @@ const handleLogin = async (e: MouseEvent) => {
         message.destroyAll();
         message.success("Login successful!");
         console.log("Login with:", model.username, model.password);
-        
-        // Redirect to home page after successful login
-        setTimeout(() => {
-          window.location.href = "/";
-        }, 500);
+        await navigateAfterLogin(router);
       } catch (error: any) {
         message.destroyAll();
         const errorMsg = error.response?.data?.error || "Login failed";

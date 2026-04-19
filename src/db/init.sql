@@ -22,3 +22,14 @@ CREATE TABLE IF NOT EXISTS user_apps (
   app_name VARCHAR(100) NOT NULL,
   app_data JSONB
 );
+
+CREATE TABLE IF NOT EXISTS refresh_sessions (
+  session_id VARCHAR(128) PRIMARY KEY,
+  user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash VARCHAR(64) NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  revoked_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_used_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

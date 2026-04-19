@@ -1,43 +1,76 @@
-import axios from "axios";
+import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
+import {
+  clearAccessToken,
+  getAccessToken,
+  refreshAccessToken,
+} from "@/client/lib/auth-session";
+import { API_URL } from "./base-url";
 
-export const API_URL = "http://localhost:3000";
+export { API_URL } from "./base-url";
 
-// Add axios interceptor to include JWT token in all requests
-axios.interceptors.request.use(
+export const apiClient = axios.create({
+  baseURL: API_URL,
+  withCredentials: true,
+});
+
+type RetryableRequestConfig = InternalAxiosRequestConfig & {
+  _retry?: boolean;
+};
+
+apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = getAccessToken();
+
     if (token) {
+      config.headers = config.headers ?? {};
       config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error),
 );
 
-// Add response interceptor to handle 401/403 errors
-axios.interceptors.response.use(
+apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      // Token expired or invalid - clear storage and redirect to login
-      localStorage.removeItem("token");
-      localStorage.removeItem("session");
-      window.location.href = "/login";
+  async (error: AxiosError) => {
+    const originalRequest = error.config as RetryableRequestConfig | undefined;
+    const requestUrl = originalRequest?.url ?? "";
+    const isAuthRoute = requestUrl.includes("/login")
+      || requestUrl.includes("/auth/refresh")
+      || requestUrl.includes("/auth/logout");
+
+    if (
+      error.response?.status !== 401
+      || !originalRequest
+      || originalRequest._retry
+      || isAuthRoute
+    ) {
+      throw error;
     }
-    return Promise.reject(error);
-  }
+
+    originalRequest._retry = true;
+
+    const token = await refreshAccessToken();
+    if (!token) {
+      clearAccessToken();
+      throw error;
+    }
+
+    originalRequest.headers = originalRequest.headers ?? {};
+    originalRequest.headers.Authorization = `Bearer ${token}`;
+
+    return apiClient(originalRequest);
+  },
 );
 
-// function to save theme to db
 export const saveTheme = async (theme: {
   primary: string;
   accent: string;
   background: string;
 }) => {
   try {
-    const response = await axios.post(`${API_URL}/theme`, theme);
+    const response = await apiClient.post("/theme", theme);
     return response.data;
   } catch (error) {
     console.error("Error saving theme:", error);
