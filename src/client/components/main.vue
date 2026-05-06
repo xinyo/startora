@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { useStore } from "@/client/store";
+import {
+    createAppDraftFromApp,
+    createEmptyAppDraft,
+    saveAppDraft,
+} from "@/client/lib/app-editor";
 import { Edit16Regular } from "@vicons/fluent";
 import { ref } from "vue";
 
@@ -8,14 +13,15 @@ const store = useStore();
 
 const tempName = ref("");
 const tempUrl = ref("");
-const tempId = ref(0);
+const tempId = ref<number | null>(null);
 
-const editApp = async (tempId: number) => {
-    const result = await
-        store.putUserApp(tempId,
-            tempName.value,
-            { url: tempUrl.value },
-        );
+const saveApp = async () => {
+    const result = await saveAppDraft(store, {
+        id: tempId.value,
+        name: tempName.value,
+        url: tempUrl.value,
+    });
+
     if (result) {
         console.log("App updated successfully:", result);
         isModalshow.value = false;
@@ -23,12 +29,25 @@ const editApp = async (tempId: number) => {
         console.error("Failed to update app");
     }
 };
-const showModal = (app: any) => {
-    tempName.value = app.appName;
-    tempUrl.value = app.appData.url;
-    tempId.value = app.id;
+
+const applyDraft = (draft: { id: number | null; name: string; url: string }) => {
+    tempName.value = draft.name;
+    tempUrl.value = draft.url;
+    tempId.value = draft.id;
     isModalshow.value = true;
 };
+
+const openEditAppModal = (app: any) => {
+    applyDraft(createAppDraftFromApp(app));
+};
+
+const openCreateAppModal = () => {
+    applyDraft(createEmptyAppDraft());
+};
+
+defineExpose({
+    openCreateAppModal,
+});
 </script>
 <template>
     <div>
@@ -40,7 +59,7 @@ const showModal = (app: any) => {
                     </div>
                     <div>{{ app.appName }}</div>
                 </a>
-                <n-button quaternary circle class="icon-button" @click="showModal(app)">
+                <n-button quaternary circle class="icon-button" @click="openEditAppModal(app)">
                     <template #icon>
                         <n-icon>
                             <Edit16Regular />
@@ -49,7 +68,7 @@ const showModal = (app: any) => {
                 </n-button>
             </div>
             <n-modal v-model:show="isModalshow">
-                <n-card style="width: 600px" :title="`Edit App${tempId}`" :bordered="false" size="huge" role="dialog"
+                <n-card style="width: 600px" :title="tempId === null ? 'Add App' : 'Edit App'" :bordered="false" size="huge" role="dialog"
                     aria-modal="true">
                     <div class="container">
                         <input type="text" v-model="tempName" placeholder="App Name" />
@@ -57,7 +76,7 @@ const showModal = (app: any) => {
                     </div>
                     <template #action>
                         <button @click="isModalshow = false">Close</button>
-                        <button @click="editApp(tempId)">Save</button>
+                        <button @click="saveApp()">Save</button>
                     </template>
                 </n-card>
             </n-modal>
