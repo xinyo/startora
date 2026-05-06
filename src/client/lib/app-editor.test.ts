@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import {
   createAppDraftFromApp,
   createEmptyAppDraft,
+  joinAppUrl,
   saveAppDraft,
+  splitAppUrl,
 } from "./app-editor";
 
 describe("app editor helpers", () => {
@@ -10,7 +12,8 @@ describe("app editor helpers", () => {
     expect(createEmptyAppDraft()).toEqual({
       id: null,
       name: "",
-      url: "http://",
+      protocol: "http://",
+      url: "",
     });
   });
 
@@ -22,8 +25,30 @@ describe("app editor helpers", () => {
     })).toEqual({
       id: 42,
       name: "Docs",
-      url: "https://example.com",
+      protocol: "https://",
+      url: "example.com",
     });
+  });
+
+  it("splits a full url into protocol and value", () => {
+    expect(splitAppUrl("http://example.com")).toEqual({
+      protocol: "http://",
+      url: "example.com",
+    });
+  });
+
+  it("defaults to http when the saved url has no protocol", () => {
+    expect(splitAppUrl("example.com")).toEqual({
+      protocol: "http://",
+      url: "example.com",
+    });
+  });
+
+  it("joins protocol and value before saving", () => {
+    expect(joinAppUrl({
+      protocol: "https://",
+      url: "example.com",
+    })).toBe("https://example.com");
   });
 
   it("saves a new app through addUserApp", async () => {
@@ -35,7 +60,8 @@ describe("app editor helpers", () => {
     await saveAppDraft(store, {
       id: null,
       name: "Docs",
-      url: "https://example.com",
+      protocol: "https://",
+      url: "example.com",
     });
 
     expect(store.addUserApp).toHaveBeenCalledTimes(1);
@@ -54,7 +80,8 @@ describe("app editor helpers", () => {
     await saveAppDraft(store, {
       id: 42,
       name: "Docs",
-      url: "https://example.com",
+      protocol: "https://",
+      url: "example.com",
     });
 
     expect(store.putUserApp).toHaveBeenCalledTimes(1);
