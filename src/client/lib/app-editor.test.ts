@@ -14,6 +14,8 @@ describe("app editor helpers", () => {
       name: "",
       protocol: "http://",
       url: "",
+      icon: "",
+      description: "",
     });
   });
 
@@ -21,12 +23,18 @@ describe("app editor helpers", () => {
     expect(createAppDraftFromApp({
       id: 42,
       appName: "Docs",
-      appData: { url: "https://example.com" },
+      appData: {
+        url: "https://example.com",
+        icon: "https://example.com/icon.png",
+        description: "Reference docs",
+      },
     })).toEqual({
       id: 42,
       name: "Docs",
       protocol: "https://",
       url: "example.com",
+      icon: "https://example.com/icon.png",
+      description: "Reference docs",
     });
   });
 
@@ -62,11 +70,15 @@ describe("app editor helpers", () => {
       name: "Docs",
       protocol: "https://",
       url: "example.com",
+      icon: "https://example.com/icon.png",
+      description: "Reference docs",
     });
 
     expect(store.addUserApp).toHaveBeenCalledTimes(1);
     expect(store.addUserApp).toHaveBeenCalledWith("Docs", {
       url: "https://example.com",
+      icon: "https://example.com/icon.png",
+      description: "Reference docs",
     });
     expect(store.putUserApp).not.toHaveBeenCalled();
   });
@@ -82,11 +94,15 @@ describe("app editor helpers", () => {
       name: "Docs",
       protocol: "https://",
       url: "example.com",
+      icon: "https://example.com/icon.png",
+      description: "Reference docs",
     });
 
     expect(store.putUserApp).toHaveBeenCalledTimes(1);
     expect(store.putUserApp).toHaveBeenCalledWith(42, "Docs", {
       url: "https://example.com",
+      icon: "https://example.com/icon.png",
+      description: "Reference docs",
     });
     expect(store.addUserApp).not.toHaveBeenCalled();
   });

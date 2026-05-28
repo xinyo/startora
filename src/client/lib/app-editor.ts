@@ -3,6 +3,8 @@ export interface AppDraft {
   name: string;
   protocol: "http://" | "https://";
   url: string;
+  icon: string;
+  description: string;
 }
 
 export function createEmptyAppDraft(): AppDraft {
@@ -11,6 +13,8 @@ export function createEmptyAppDraft(): AppDraft {
     name: "",
     protocol: "http://",
     url: "",
+    icon: "",
+    description: "",
   };
 }
 
@@ -42,7 +46,11 @@ export function joinAppUrl(draft: Pick<AppDraft, "protocol" | "url">): string {
 export function createAppDraftFromApp(app: {
   id: number;
   appName: string;
-  appData?: { url?: string };
+  appData?: {
+    url?: string;
+    icon?: string;
+    description?: string;
+  };
 }): AppDraft {
   const splitUrl = splitAppUrl(app.appData?.url);
 
@@ -51,25 +59,34 @@ export function createAppDraftFromApp(app: {
     name: app.appName,
     protocol: splitUrl.protocol,
     url: splitUrl.url,
+    icon: app.appData?.icon ?? "",
+    description: app.appData?.description ?? "",
   };
 }
 
 export async function saveAppDraft(
   store: {
-    addUserApp: (name: string, data: { url: string }) => Promise<unknown>;
+    addUserApp: (
+      name: string,
+      data: { url: string; icon: string; description: string },
+    ) => Promise<unknown>;
     putUserApp: (
       appId: number,
       name: string,
-      data: { url: string },
+      data: { url: string; icon: string; description: string },
     ) => Promise<unknown>;
   },
   draft: AppDraft,
 ): Promise<unknown> {
-  const nextUrl = joinAppUrl(draft);
+  const nextAppData = {
+    url: joinAppUrl(draft),
+    icon: draft.icon,
+    description: draft.description,
+  };
 
   if (draft.id === null) {
-    return store.addUserApp(draft.name, { url: nextUrl });
+    return store.addUserApp(draft.name, nextAppData);
   }
 
-  return store.putUserApp(draft.id, draft.name, { url: nextUrl });
+  return store.putUserApp(draft.id, draft.name, nextAppData);
 }
