@@ -1,7 +1,12 @@
 <script lang="ts" setup>
 import { reactive, ref } from "vue";
 import { useMessage, FormInst } from "naive-ui";
+import { useRouter } from "vue-router";
+import { navigateAfterLogin } from "../lib/login-navigation";
+import { useStore } from "../store";
 
+const store = useStore();
+const router = useRouter();
 const formRef = ref<FormInst | null>(null);
 const message = useMessage();
 
@@ -23,12 +28,23 @@ const rules = {
   }
 };
 
-const handleLogin = (e: MouseEvent) => {
+const handleLogin = async (e: MouseEvent) => {
   e.preventDefault();
-  formRef.value?.validate((errors) => {
+  formRef.value?.validate(async (errors) => {
     if (!errors) {
-      message.success("Login logic would go here");
-      console.log("Login with:", model.username, model.password);
+      try {
+        message.loading("Logging in...");
+        const result = await store.login(model.username, model.password);
+        message.destroyAll();
+        message.success("Login successful!");
+        console.log("Login with:", model.username, model.password);
+        await navigateAfterLogin(router);
+      } catch (error: any) {
+        message.destroyAll();
+        const errorMsg = error.response?.data?.error || "Login failed";
+        message.error(errorMsg);
+        console.error("Login error:", error);
+      }
     } else {
       console.error(errors);
       message.error("Please fill in the required fields");
@@ -36,8 +52,32 @@ const handleLogin = (e: MouseEvent) => {
   });
 };
 
-const handleResetPassword = () => {
-  message.info("Redirecting to reset password page...");
+const handleCreateUser = async () => {
+  formRef.value?.validate(async (errors) => {
+    if (!errors) {
+      // Validate password length
+      // if (model.password.length < 6) {
+      //   message.error("Password must be at least 6 characters long");
+      //   return;
+      // }
+      
+      try {
+        const result = await store.addUser(model.username, model.password);
+        message.success("User created successfully!");
+        console.log("User created:", result);
+        // Clear the form
+        model.username = "";
+        model.password = "";
+      } catch (error: any) {
+        const errorMsg = error.response?.data?.message || "Failed to create user";
+        message.error(errorMsg);
+        console.error("Error creating user:", error);
+      }
+    } else {
+      console.error(errors);
+      message.error("Please fill in the required fields");
+    }
+  });
 };
 </script>
 
@@ -67,8 +107,8 @@ const handleResetPassword = () => {
           <n-button type="primary" @click="handleLogin" block>
             Login
           </n-button>
-          <n-button text @click="handleResetPassword" class="reset-link">
-            Reset Password
+          <n-button @click="handleCreateUser" block secondary>
+            Create New User
           </n-button>
         </div>
       </n-form>
@@ -95,11 +135,6 @@ const handleResetPassword = () => {
   flex-direction: column;
   gap: 12px;
   margin-top: 12px;
-}
-
-.reset-link {
-  font-size: 14px;
-  align-self: flex-end;
 }
 </style>
 

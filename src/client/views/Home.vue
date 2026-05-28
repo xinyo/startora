@@ -6,27 +6,13 @@ import Main from "../components/main.vue";
 import { useStore } from "../store";
 
 const isConfigDialog = ref(false);
-const appName = ref("");
-const appUrl = ref("http://");
+const mainRef = ref<{ openCreateAppModal: () => void } | null>(null);
 
 const store = useStore();
 
-const addApp = async () => {
-  if (appName.value && appUrl.value) {
-    const data = await store.addUserApp(appName.value, {
-      url: appUrl.value,
-    });
-    if (data) {
-      appName.value = "";
-      appUrl.value = "http://";
-    }
-  } else {
-    console.error("App name and URL are required");
-  }
-};
-
 onMounted(async () => {
-  await store.init();
+  await store.ensureInitialized();
+  await store.initApps();
 });
 </script>
 
@@ -38,13 +24,10 @@ onMounted(async () => {
     <n-message-provider placement="bottom">
       <img :src="logo" />
       <div>
-        <input type="text" v-model="appName" placeholder="App Name" />
-        <input type="text" v-model="appUrl" placeholder="App URL" />
-        <button @click="store.initApps">init apps</button>
-        <button @click="addApp()">add app</button>
+        <button @click="mainRef?.openCreateAppModal()">add app</button>
       </div>
       <n-modal-provider>
-        <Main v-if="!isConfigDialog"></Main>
+        <Main v-if="!isConfigDialog" ref="mainRef"></Main>
         <Config v-if="isConfigDialog" />
       </n-modal-provider>
     </n-message-provider>

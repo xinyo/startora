@@ -1,10 +1,8 @@
-import axios from "axios";
-import { API_URL } from "./config";
+import { apiClient } from "./config";
 
-//fetch user's apps
 export const getUserApps = async (userId: number): Promise<any[]> => {
   try {
-    const response = await axios.get(`${API_URL}/user/${userId}/apps`);
+    const response = await apiClient.get(`/user/${userId}/apps`);
     return response.data.map((app: any) => ({
       id: app.id,
       appName: app.app_name,
@@ -16,14 +14,13 @@ export const getUserApps = async (userId: number): Promise<any[]> => {
   }
 };
 
-//add a new app for the user
 export const addUserApp = async (
   userId: number,
   appName: string,
-  appData: any
+  appData: any,
 ): Promise<any> => {
   try {
-    const response = await axios.post(`${API_URL}/user/${userId}/apps`, {
+    const response = await apiClient.post(`/user/${userId}/apps`, {
       appName,
       appData,
     });
@@ -42,16 +39,13 @@ export const putUserApp = async (
   userId: number,
   appName: string,
   appData: any,
-  appId: number
+  appId: number,
 ): Promise<any> => {
   try {
-    const response = await axios.put(
-      `${API_URL}/user/${userId}/apps/${appId}`,
-      {
-        appName,
-        appData,
-      }
-    );
+    const response = await apiClient.put(`/user/${userId}/apps/${appId}`, {
+      appName,
+      appData,
+    });
     return response.data;
   } catch (error) {
     console.error("Error updating user app:", error);
@@ -61,10 +55,10 @@ export const putUserApp = async (
 
 export const deleteUserApp = async (
   userId: number,
-  appId: number
+  appId: number,
 ): Promise<void> => {
   try {
-    await axios.delete(`${API_URL}/user/${userId}/apps/${appId}`);
+    await apiClient.delete(`/user/${userId}/apps/${appId}`);
   } catch (error) {
     console.error("Error deleting user app:", error);
     throw error;
