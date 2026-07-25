@@ -1,13 +1,28 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Dialog, Modal, ModalOverlay } from "react-aria-components";
 import { useTranslation } from "react-i18next";
 import { DEFAULT_ICON_NAME } from "@/assets/registry";
 import { Button } from "@/components/base/buttons/button";
-import { IconSelector } from "@/components/dashboard/icon-selector";
 import { ApiClientError } from "@/lib/api";
 import { useAppStore } from "@/store";
 import type { AppItem } from "@/types/contracts";
+
+const IconSelector = lazy(() =>
+  import("@/components/dashboard/icon-selector").then((m) => ({
+    default: m.IconSelector,
+  })),
+);
+
+function IconSelectorFallback() {
+  return (
+    <div className="icon-selector">
+      <div className="icon-selector-status" aria-live="polite">
+        Loading icons…
+      </div>
+    </div>
+  );
+}
 
 interface AppEditorDialogProps {
   appItem: AppItem | null;
@@ -34,13 +49,20 @@ export function AppEditorDialog({
   const { t } = useTranslation();
   const createApp = useAppStore((state) => state.createApp);
   const updateApp = useAppStore((state) => state.updateApp);
+  const categoriesById = useAppStore((state) => state.categoriesById);
+  const categoryIds = useAppStore((state) => state.categoryIds);
   const [name, setName] = useState("");
   const [icon, setIcon] = useState(DEFAULT_ICON_NAME);
   const [iconSearch, setIconSearch] = useState("");
   const [iconSearchEdited, setIconSearchEdited] = useState(false);
   const [url, setUrl] = useState("");
+  const [categoryId, setCategoryId] = useState<number | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const categories = categoryIds
+    .map((id) => categoriesById[id])
+    .filter(Boolean);
 
   useEffect(() => {
     if (!isOpen) {
@@ -52,6 +74,7 @@ export function AppEditorDialog({
     setIconSearch(appName);
     setIconSearchEdited(false);
     setUrl(appItem?.url ?? "");
+    setCategoryId(appItem?.categoryId ?? null);
     setError(null);
   }, [appItem, isOpen]);
 
@@ -60,7 +83,7 @@ export function AppEditorDialog({
     setSubmitting(true);
     setError(null);
     try {
-      const input = { name, icon, url };
+      const input = { name, icon, url, categoryId: categoryId ?? undefined };
       if (appItem) {
         await updateApp(appItem.id, input);
       } else {
@@ -126,22 +149,44 @@ export function AppEditorDialog({
 
             <div className="field">
               <span>{t("appForm.icon")}</span>
-              <IconSelector
-                value={icon}
-                searchValue={iconSearch}
-                onChange={setIcon}
-                onSearchChange={(nextSearch) => {
-                  setIconSearch(nextSearch);
-                  setIconSearchEdited(true);
-                }}
-                isInvalid={Boolean(errorMessage(error, "icon", t))}
-              />
+              <Suspense fallback={<IconSelectorFallback />}>
+                <IconSelector
+                  value={icon}
+                  searchValue={iconSearch}
+                  onChange={setIcon}
+                  onSearchChange={(nextSearch) => {
+                    setIconSearch(nextSearch);
+                    setIconSearchEdited(true);
+                  }}
+                  isInvalid={Boolean(errorMessage(error, "icon", t))}
+                />
+              </Suspense>
               {errorMessage(error, "icon", t) && (
                 <small className="field-error">
                   {errorMessage(error, "icon", t)}
                 </small>
               )}
             </div>
+
+            <label className="field">
+              <span>{t("appForm.category")}</span>
+              <select
+                className="category-select"
+                value={categoryId ?? ""}
+                onChange={(event) => {
+                  const val = event.target.value;
+                  setCategoryId(val === "" ? null : Number(val));
+                }}
+                aria-label={t("appForm.category")}
+              >
+                <option value="">{t("appForm.categoryNone")}</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             <label className="field">
               <span>{t("appForm.url")}</span>
@@ -163,9 +208,9 @@ export function AppEditorDialog({
 
             {error !== null &&
               !(error instanceof ApiClientError && error.fields) && (
-              <p className="form-error" role="alert">
-                {t("appForm.requestFailed")}
-              </p>
+                <p className="form-error" role="alert">
+                  {t("appForm.requestFailed")}
+                </p>
               )}
 
             <div className="dialog-actions">

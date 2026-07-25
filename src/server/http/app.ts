@@ -9,10 +9,8 @@ import type {
   Response,
 } from "express";
 import type { AppCatalogModule } from "../apps/module.js";
-import type {
-  AuthenticatedSession,
-  AuthModule,
-} from "../auth/module.js";
+import type { AuthenticatedSession, AuthModule } from "../auth/module.js";
+import type { CategoriesModule } from "../categories/module.js";
 import { AppError, notFoundError } from "../errors.js";
 import {
   clearSessionCookie,
@@ -23,6 +21,7 @@ import {
 export interface HttpAppOptions {
   auth: AuthModule;
   apps: AppCatalogModule;
+  categories: CategoriesModule;
   appOrigin: string;
   secureCookies: boolean;
   clientDirectory?: string;
@@ -50,6 +49,14 @@ function parseAppId(rawId: string): number {
     throw notFoundError();
   }
   return appId;
+}
+
+function parseCategoryId(rawId: string): number {
+  const categoryId = Number(rawId);
+  if (!Number.isSafeInteger(categoryId) || categoryId <= 0) {
+    throw notFoundError();
+  }
+  return categoryId;
 }
 
 export function createHttpApp(options: HttpAppOptions) {
@@ -167,6 +174,77 @@ export function createHttpApp(options: HttpAppOptions) {
       next(error);
     }
   });
+
+  app.get("/api/categories", requireSession, (_request, response) => {
+    response.json({
+      categories: options.categories.list(sessionFrom(response).user.id),
+    });
+  });
+
+  app.post("/api/categories", requireSession, (request, response, next) => {
+    try {
+      const categoryItem = options.categories.create(
+        sessionFrom(response).user.id,
+        request.body,
+      );
+      response.status(201).json({ category: categoryItem });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/categories/:id", requireSession, (request, response, next) => {
+    try {
+      const categoryItem = options.categories.update(
+        sessionFrom(response).user.id,
+        parseCategoryId(request.params.id),
+        request.body,
+      );
+      response.json({ category: categoryItem });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete(
+    "/api/categories/:id",
+    requireSession,
+    (request, response, next) => {
+      try {
+        options.categories.delete(
+          sessionFrom(response).user.id,
+          parseCategoryId(request.params.id),
+        );
+        response.status(204).send();
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  app.put(
+    "/api/categories/reorder",
+    requireSession,
+    (request, response, next) => {
+      try {
+        const body = request.body as { orderedIds?: number[] } | undefined;
+        if (!body?.orderedIds || !Array.isArray(body.orderedIds)) {
+          throw new AppError(
+            400,
+            "INVALID_REQUEST",
+            "orderedIds array is required.",
+          );
+        }
+        options.categories.reorder(
+          sessionFrom(response).user.id,
+          body.orderedIds,
+        );
+        response.status(204).send();
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
 
   app.use("/api", (_request, _response, next) => {
     next(notFoundError());

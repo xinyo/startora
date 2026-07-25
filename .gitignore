@@ -14,6 +14,9 @@ dist-ssr
 data/
 coverage/
 
+# Generated manifests
+src/assets/logos/manifest.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

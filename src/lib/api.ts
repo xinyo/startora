@@ -2,6 +2,8 @@ import type {
   ApiErrorBody,
   AppItem,
   AppItemInput,
+  CategoryItem,
+  CategoryItemInput,
   User,
 } from "@/types/contracts";
 
@@ -24,10 +26,7 @@ export class ApiClientError extends Error {
   }
 }
 
-async function request<T>(
-  path: string,
-  init: RequestInit = {},
-): Promise<T> {
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(path, {
     ...init,
     credentials: "include",
@@ -107,5 +106,42 @@ export const api = {
 
   deleteApp(id: number): Promise<void> {
     return request(`/api/apps/${id}`, { method: "DELETE" });
+  },
+
+  async listCategories(): Promise<CategoryItem[]> {
+    const response = await request<{ categories: CategoryItem[] }>(
+      "/api/categories",
+    );
+    return response.categories;
+  },
+
+  async createCategory(input: CategoryItemInput): Promise<CategoryItem> {
+    const response = await request<{ category: CategoryItem }>(
+      "/api/categories",
+      { method: "POST", body: JSON.stringify(input) },
+    );
+    return response.category;
+  },
+
+  async updateCategory(
+    id: number,
+    input: CategoryItemInput,
+  ): Promise<CategoryItem> {
+    const response = await request<{ category: CategoryItem }>(
+      `/api/categories/${id}`,
+      { method: "PUT", body: JSON.stringify(input) },
+    );
+    return response.category;
+  },
+
+  deleteCategory(id: number): Promise<void> {
+    return request(`/api/categories/${id}`, { method: "DELETE" });
+  },
+
+  reorderCategories(orderedIds: number[]): Promise<void> {
+    return request("/api/categories/reorder", {
+      method: "PUT",
+      body: JSON.stringify({ orderedIds }),
+    });
   },
 };

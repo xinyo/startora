@@ -28,7 +28,7 @@ describe("app catalog module", () => {
   });
 
   it("migrates an empty database and supports full CRUD newest-first", () => {
-    expect(database.pragma("user_version", { simple: true })).toBe(1);
+    expect(database.pragma("user_version", { simple: true })).toBe(2);
     const apps = createAppCatalogModule(database, { now: () => now });
 
     const first = apps.create(1, {

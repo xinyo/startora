@@ -35,7 +35,8 @@ void i18n.use(initReactI18next).init({
           usernameInvalid:
             "Use 3–50 letters, numbers, dots, underscores, or hyphens.",
           passwordInvalid: "Use a password between 8 and 128 characters.",
-          requestFailed: "We could not complete that request. Please try again.",
+          requestFailed:
+            "We could not complete that request. Please try again.",
         },
         dashboard: {
           eyebrow: "Dashboard",
@@ -58,6 +59,7 @@ void i18n.use(initReactI18next).init({
           icon: "Icon",
           iconSearch: "Search icons",
           iconSearchPlaceholder: "Search by icon name",
+          iconEmptyPrompt: "Type to search for an icon.",
           iconResults: "{{count}} icons found",
           iconNoResults: "No matching icon. The default icon is selected.",
           url: "Web address",
@@ -67,6 +69,8 @@ void i18n.use(initReactI18next).init({
           nameInvalid: "Enter an app name up to 100 characters.",
           iconInvalid: "Choose an available icon.",
           urlInvalid: "Enter a complete HTTP or HTTPS address.",
+          category: "Category",
+          categoryNone: "No category",
           requestFailed: "The app could not be saved. Please try again.",
         },
         deleteDialog: {
@@ -75,6 +79,27 @@ void i18n.use(initReactI18next).init({
           confirm: "Delete app",
           deleting: "Deleting…",
           requestFailed: "The app could not be deleted. Please try again.",
+        },
+        categories: {
+          manage: "Manage categories",
+          manageTitle: "Manage categories",
+          addCategory: "Add category",
+          editCategory: "Edit category",
+          deleteCategory: "Delete category",
+          name: "Category name",
+          namePlaceholder: "Design tools",
+          noCategories: "No categories yet. Add one to organize your apps.",
+          deleteConfirmTitle: "Delete {{name}}?",
+          deleteConfirmBody:
+            "Apps in this category will move to the uncategorized section. This action cannot be undone.",
+          deleteConfirm: "Delete category",
+          deleteDeleting: "Deleting…",
+          requestFailed: "The category could not be saved. Please try again.",
+          deleteFailed: "The category could not be deleted. Please try again.",
+          moveUp: "Move up",
+          moveDown: "Move down",
+          uncategorized: "Uncategorized",
+          nameInvalid: "Enter a category name up to 100 characters.",
         },
         status: {
           loading: "Loading your dashboard…",

@@ -8,6 +8,7 @@ export interface AppItem {
   name: string;
   icon: string;
   url: string;
+  categoryId: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -16,6 +17,20 @@ export interface AppItemInput {
   name: string;
   icon: string;
   url: string;
+  categoryId?: number | null;
+}
+
+export interface CategoryItem {
+  id: number;
+  name: string;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CategoryItemInput {
+  name: string;
+  position?: number;
 }
 
 export interface ApiErrorBody {
