@@ -5,6 +5,8 @@ import { AppEditorDialog } from "@/components/dashboard/app-editor-dialog";
 import { CategorySection } from "@/components/dashboard/category-section";
 import { DeleteAppDialog } from "@/components/dashboard/delete-app-dialog";
 import { ManageCategoriesDialog } from "@/components/dashboard/manage-categories-dialog";
+import { Edit01, Trash01 } from "@untitledui/icons";
+import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { DEFAULT_ICON_NAME, getIconUrl, loadIconUrl } from "@/assets/registry";
 import { useAppStore } from "@/store";
 import type { AppItem } from "@/types/contracts";
@@ -96,6 +98,32 @@ function App() {
     const iconUrl = iconUrls[appItem.icon];
     return (
       <article className="app-card" key={appItem.id}>
+        <Dropdown.Root>
+          <div className="app-card-dropdown">
+            <Dropdown.DotsButton
+              aria-label={t("dashboard.appCardMenu", { name: appItem.name })}
+            />
+          </div>
+          <Dropdown.Popover className="w-28">
+            <Dropdown.Menu
+              onAction={(key) => {
+                if (key === "edit") {
+                  openEditDialog(appItem);
+                } else if (key === "delete") {
+                  setDeletingApp(appItem);
+                }
+              }}
+            >
+              <Dropdown.Item id="edit" icon={Edit01} label={t("common.edit")} />
+              <Dropdown.Item
+                id="delete"
+                icon={Trash01}
+                label={t("common.delete")}
+                className="dropdown-item-destructive"
+              />
+            </Dropdown.Menu>
+          </Dropdown.Popover>
+        </Dropdown.Root>
         <a
           className="app-link"
           href={appItem.url}
@@ -123,24 +151,6 @@ function App() {
             <small>{hostnameFrom(appItem.url)}</small>
           </span>
         </a>
-        <div className="app-card-actions">
-          <Button
-            color="tertiary"
-            size="xs"
-            aria-label={t("dashboard.editApp", { name: appItem.name })}
-            onPress={() => openEditDialog(appItem)}
-          >
-            {t("common.edit")}
-          </Button>
-          <Button
-            color="link-destructive"
-            size="xs"
-            aria-label={t("dashboard.deleteApp", { name: appItem.name })}
-            onPress={() => setDeletingApp(appItem)}
-          >
-            {t("common.delete")}
-          </Button>
-        </div>
       </article>
     );
   };

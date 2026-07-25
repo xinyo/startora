@@ -49,6 +49,7 @@ void i18n.use(initReactI18next).init({
           openApp: "Open {{name}}",
           editApp: "Edit {{name}}",
           deleteApp: "Delete {{name}}",
+          appCardMenu: "Menu for {{name}}",
           loadFailed: "Your apps could not be loaded. Refresh to try again.",
         },
         appForm: {

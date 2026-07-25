@@ -88,6 +88,7 @@ body {
   background:
     radial-gradient(circle at 15% 10%, rgb(127 86 217 / 10%), transparent 30rem),
     #f7f7fb;
+  --app-card-padding: 1.15rem;
 }
 
 button,
@@ -464,9 +465,10 @@ button {
 }
 
 .app-card {
+  position: relative;
   display: grid;
   gap: 1rem;
-  padding: 1.15rem;
+  padding: var(--app-card-padding);
   border: 1px solid #e4e4e7;
   border-radius: 1.1rem;
   background: rgb(255 255 255 / 88%);
@@ -530,12 +532,21 @@ button {
   color: #71717a;
 }
 
-.app-card-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.4rem;
-  padding-top: 0.8rem;
-  border-top: 1px solid #f0f0f2;
+.app-card-dropdown {
+  position: absolute;
+  top: var(--app-card-padding);
+  right: var(--app-card-padding);
+  z-index: 1;
+}
+
+
+.dropdown-item-destructive:hover {
+
+  span,
+  svg {
+    color: var(--color-text-error-primary_hover);
+  }
+
 }
 
 .dialog-overlay {
