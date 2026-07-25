@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Data (SQLite)
+data/
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+
+# Tests
+tests/
+coverage/
+
+# IDE
+.vscode/
+
+# Environment files
+.env
+.env.local
+.env.*.local
