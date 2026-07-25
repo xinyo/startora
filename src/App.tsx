@@ -6,6 +6,7 @@ import { CategorySection } from "@/components/dashboard/category-section";
 import { DeleteAppDialog } from "@/components/dashboard/delete-app-dialog";
 import { ManageCategoriesDialog } from "@/components/dashboard/manage-categories-dialog";
 import { Edit01, Trash01 } from "@untitledui/icons";
+import AppLogo from "@/assets/logo-group.svg";
 import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { DEFAULT_ICON_NAME, getIconUrl, loadIconUrl } from "@/assets/registry";
 import { useAppStore } from "@/store";
@@ -159,7 +160,8 @@ function App() {
     <main className="dashboard-shell">
       <header className="dashboard-header">
         <div>
-          <p className="eyebrow">{t("dashboard.eyebrow")}</p>
+          <img className="eyebrow-logo mb-5" src={AppLogo}></img>
+
           <h1>{t("dashboard.greeting", { username: user?.username ?? "" })}</h1>
           <p className="dashboard-subtitle">{t("dashboard.subtitle")}</p>
         </div>
