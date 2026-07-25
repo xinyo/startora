@@ -1,0 +1,49 @@
+name: Build and Push to Docker Hub
+
+on:
+  push:
+    branches: ["main"] # Triggers on PR merges to main
+  pull_request:
+    branches: ["main"] # Triggers on PR creation/updates (build only)
+  release:
+    types: [published] # Triggers when you publish a GitHub Release
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Log in if it's a merge to main OR a new Release
+      - name: Log in to Docker Hub
+        if: github.event_name == 'push' || github.event_name == 'release'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: xinyo/startora
+          tags: |
+            # Always add the commit SHA
+            type=sha,prefix=
+
+            # If it's a release (e.g., v1.2.0), strip the 'v' and tag the image '1.2.0'
+            type=semver,pattern={{version}}
+
+            # Tag as 'latest' on merges to main and releases, but NOT on pull requests
+            type=raw,value=latest,enable=${{ github.event_name != 'pull_request' }}
+
+      # Push if it's a merge to main OR a new Release
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: ${{ github.event_name == 'push' || github.event_name == 'release' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
