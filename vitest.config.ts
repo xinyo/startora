@@ -1,21 +1,20 @@
+import react from "@vitejs/plugin-react";
+import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
-import vue from "@vitejs/plugin-vue";
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [react()],
   resolve: {
     alias: {
-      "@": "/src",
+      "@": resolve(__dirname, "./src"),
     },
   },
   test: {
     environment: "node",
-    passWithNoTests: true,
-    include: [
-      "src/**/*.test.ts",
-      "src/**/*.spec.ts",
-      "src/**/*.test.tsx",
-      "src/**/*.spec.tsx",
-    ],
+    include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
+    setupFiles: ["./tests/setup.ts"],
+    coverage: {
+      reporter: ["text", "html"],
+    },
   },
 });

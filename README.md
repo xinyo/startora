@@ -1,107 +1,77 @@
 # Startora
 
-## Project Overview
+Startora is a personal app dashboard with a React/Vite frontend and an
+Express/SQLite backend. Authentication uses revocable, server-side sessions in
+an `HttpOnly` cookie; browser state contains the signed-in user and their apps,
+not the session credential.
 
-Startora is a modern personal start page/navigation app built with Vue 3 + TypeScript + Vite. It provides a simple UI for users to add, edit, and manage shortcut apps. The backend uses Node.js (Express) and PostgreSQL for data persistence, suitable for personal dashboards or team link collections.
+## Requirements
 
-## ✨ Features
+- Node.js 24 LTS
+- Corepack with pnpm enabled
 
-- **App management**: Add, edit, and remove shortcut apps (name, URL).
-- **Data persistence**: Store user data and app configuration in PostgreSQL.
-- **Type safety**: TypeScript across the frontend with shared types.
+## First-time setup
 
-## 🛠 Tech Stack
-
-### Frontend
-- **Framework**: [Vue 3](https://vuejs.org/) (Script Setup)
-- **Build tool**: [Vite](https://vitejs.dev/)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **State management**: [Pinia](https://pinia.vuejs.org/)
-- **UI library**: [Naive UI](https://www.naiveui.com/)
-- **HTTP client**: [Axios](https://axios-http.com/)
-
-### Backend
-- **Runtime**: [Node.js](https://nodejs.org/)
-- **Web framework**: [Express](https://expressjs.com/)
-- **DB driver**: [pg](https://node-postgres.com/)
-
-### Database
-- **Database**: [PostgreSQL](https://www.postgresql.org/)
-
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js (recommended v16+)
-- PostgreSQL (or Docker)
-- pnpm / npm / yarn
-
-### 1. Install dependencies
-
-```bash
+```powershell
+corepack enable
 pnpm install
-# or
-npm install
+pnpm approve-builds
 ```
 
-### 2. Database setup
+When `pnpm approve-builds` prompts for packages, select both `better-sqlite3`
+and `esbuild` (press `a` to select all), then confirm the selection. pnpm blocks
+dependency build scripts by default; without this approval, the server cannot
+load the native `better-sqlite3` binding.
 
-Ensure PostgreSQL is installed and create a database named `startora`.
-If you use Homebrew, you can install PostgreSQL 15:
+## Development
 
-```bash
-brew install postgresql@15
+```powershell
+pnpm dev
 ```
 
-Run the init script:
+The Vite client runs at `http://localhost:5173` and proxies `/api` to the
+Express process on port 3000.
 
-```bash
-psql -U postgres
-\i src/db/init.sql
+Useful commands:
+
+```powershell
+pnpm test
+pnpm lint
+pnpm build
+pnpm start
 ```
 
-> **Note**: Backend connection config is in `src/server/index.cjs` with defaults:
-> - User: `postgres`
-> - Password: configure locally
-> - Host: `localhost`
-> - Port: `5432`
->
-> Update it to match your local environment.
+`pnpm start` serves both the built client and API from Express.
 
-### 3. Start development servers
+## Configuration
 
-This runs Vite and Express together:
+Copy `.env.example` values into the environment used to launch the server.
+Environment files are not loaded automatically, so secrets and deployment
+configuration remain the responsibility of the process manager.
 
-```bash
-npm run dev
-```
+- `PORT`: Express port, default `3000`.
+- `DATABASE_PATH`: SQLite file, default `data/startora.sqlite`.
+- `APP_ORIGIN`: exact browser origin accepted for mutations. Development
+  defaults to `http://localhost:5173`.
+- `NODE_ENV`: set to `production` to enable the cookie's `Secure` attribute.
 
-Open `http://localhost:5173` in your browser.
+Production must run behind HTTPS. SQLite is intended for one Startora server
+process; use a network database before scaling to multiple writers.
 
-### 4. Build for production
+## App icons
 
-```bash
-npm run build
-```
+Commit app icons to `src/assets` using `.svg`, `.png`, `.webp`, `.jpg`,
+`.jpeg`, or `.avif`. The dashboard builds its picker from those files and saves
+only the basename, such as `figma.svg`, to SQLite.
 
-## 🧩 Usage Example
+If an icon is removed after an app has been saved, the dashboard displays a
+letter fallback instead of a broken image.
 
-1. Open `http://localhost:5173` after starting the dev server
-2. Enter App Name and App URL
-3. Click add app to create a shortcut
-4. Click the edit button on a card to update name or URL
+## Data and security
 
-## 🔑 Key Entrypoints & Config
-
-- Frontend entry: `src/client/main.ts`
-- Frontend root: `src/client/App.vue`
-- Backend entry: `src/server/index.cjs`
-- API base URL: `http://localhost:3000`
-- Build config: `vite.config.ts`
-
-## 📖 Directory Notes
-
-- **`src/client`**: Frontend logic. `components/main.vue` is the main display; `components/config.vue` handles configuration.
-- **`src/server`**: Express server providing REST APIs for user and app CRUD operations.
-- **`src/db`**: SQL schema and initialization scripts.
- 
+- Usernames are case-insensitively unique.
+- Passwords are hashed with Node's `crypto.scrypt` and a random salt.
+- Random session tokens expire after seven rolling days; only SHA-256 token
+  hashes are stored.
+- App queries derive the owner from the authenticated session.
+- SQLite migrations run transactionally when the server opens the database.
