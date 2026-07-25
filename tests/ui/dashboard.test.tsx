@@ -1,6 +1,13 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
 import type { ReactNode } from "react";
@@ -41,7 +48,27 @@ vi.mock("@/lib/api", () => {
   };
 });
 
+vi.mock("@/assets/registry", () => {
+  const defaultIcon = {
+    name: "default-app.svg",
+    url: "/default-app.svg",
+  };
+  const iconAssets = [
+    defaultIcon,
+    { name: "figma.svg", url: "/figma.svg" },
+    { name: "github-icon.svg", url: "/github-icon.svg" },
+  ];
+  return {
+    DEFAULT_ICON_NAME: defaultIcon.name,
+    iconAssets,
+    getIconUrl: (iconName: string) =>
+      iconAssets.find((asset) => asset.name === iconName)?.url ??
+      defaultIcon.url,
+  };
+});
+
 import App from "@/App";
+import { DEFAULT_ICON_NAME, getIconUrl } from "@/assets/registry";
 import i18n from "@/i18n";
 import { api } from "@/lib/api";
 import { AppRouter } from "@/router";
@@ -94,57 +121,101 @@ describe("dashboard UI", () => {
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
     expect(link).toHaveAttribute("href", firstApp.url);
-    expect(screen.getByText("M")).toBeVisible();
+    expect(link.querySelector("img")).toHaveAttribute(
+      "src",
+      getIconUrl(DEFAULT_ICON_NAME),
+    );
   });
 
-  it("creates, edits, and deletes an app through accessible dialogs", async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<App />);
-    const created: AppItem = {
-      ...firstApp,
-      id: 2,
-      name: "Figma",
-      icon: "default-app.svg",
-      url: "https://figma.com/",
-    };
-    vi.mocked(api.createApp).mockResolvedValue(created);
+  it(
+    "creates, edits, and deletes an app through accessible dialogs",
+    async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<App />);
+      const created: AppItem = {
+        ...firstApp,
+        id: 2,
+        name: "Figma",
+        icon: "figma.svg",
+        url: "https://figma.com/",
+      };
+      vi.mocked(api.createApp).mockResolvedValue(created);
 
-    await user.click(screen.getAllByRole("button", { name: "Add app" })[0]);
-    let dialog = await screen.findByRole("dialog", { name: "Add an app" });
-    await user.type(within(dialog).getByLabelText("App name"), "Figma");
-    await user.type(
-      within(dialog).getByLabelText("Web address"),
-      "https://figma.com",
-    );
-    await user.click(within(dialog).getByRole("button", { name: "Add app" }));
-    expect(await screen.findByText("Figma")).toBeVisible();
+      await user.click(screen.getAllByRole("button", { name: "Add app" })[0]);
+      let dialog = await screen.findByRole("dialog", { name: "Add an app" });
+      await user.type(within(dialog).getByLabelText("App name"), "Figma");
+      expect(within(dialog).getByLabelText("Search icons")).toHaveValue("Figma");
+      await user.click(
+        within(dialog).getByRole("radio", {
+          name: "figma",
+        }),
+      );
+      await user.type(
+        within(dialog).getByLabelText("Web address"),
+        "https://figma.com",
+      );
+      await user.click(within(dialog).getByRole("button", { name: "Add app" }));
+      expect(await screen.findByText("Figma")).toBeVisible();
+      expect(api.createApp).toHaveBeenCalledWith({
+        name: "Figma",
+        icon: "figma.svg",
+        url: "https://figma.com",
+      });
 
-    const updated = { ...created, name: "Figma Design" };
-    vi.mocked(api.updateApp).mockResolvedValue(updated);
-    await user.click(screen.getByRole("button", { name: "Edit Figma" }));
-    dialog = await screen.findByRole("dialog", { name: "Edit app" });
-    const nameInput = within(dialog).getByLabelText("App name");
-    await user.clear(nameInput);
-    await user.type(nameInput, "Figma Design");
-    await user.click(
-      within(dialog).getByRole("button", { name: "Save changes" }),
-    );
-    expect(await screen.findByText("Figma Design")).toBeVisible();
+      const createdIcon = screen
+        .getByRole("link", { name: "Open Figma" })
+        .querySelector("img");
+      expect(createdIcon).toHaveAttribute("loading", "lazy");
+      fireEvent.error(createdIcon as HTMLImageElement);
+      expect(createdIcon).toHaveAttribute("src", getIconUrl(DEFAULT_ICON_NAME));
 
-    vi.mocked(api.deleteApp).mockResolvedValue();
-    await user.click(
-      screen.getByRole("button", { name: "Delete Figma Design" }),
-    );
-    dialog = await screen.findByRole("dialog", {
-      name: "Delete Figma Design?",
-    });
-    await user.click(
-      within(dialog).getByRole("button", { name: "Delete app" }),
-    );
-    await waitFor(() => {
-      expect(screen.queryByText("Figma Design")).not.toBeInTheDocument();
-    });
-  });
+      const updated = {
+        ...created,
+        name: "Figma Design",
+        icon: "github-icon.svg",
+      };
+      vi.mocked(api.updateApp).mockResolvedValue(updated);
+      await user.click(screen.getByRole("button", { name: "Edit Figma" }));
+      dialog = await screen.findByRole("dialog", { name: "Edit app" });
+      const nameInput = within(dialog).getByLabelText("App name");
+      const iconSearch = within(dialog).getByLabelText("Search icons");
+      expect(iconSearch).toHaveValue("Figma");
+      await user.clear(iconSearch);
+      await user.type(iconSearch, "github icon");
+      await user.clear(nameInput);
+      await user.type(nameInput, "Figma Design");
+      expect(iconSearch).toHaveValue("github icon");
+      await user.click(
+        within(dialog).getByRole("radio", {
+          name: "github icon",
+        }),
+      );
+      await user.click(
+        within(dialog).getByRole("button", { name: "Save changes" }),
+      );
+      expect(await screen.findByText("Figma Design")).toBeVisible();
+      expect(api.updateApp).toHaveBeenCalledWith(2, {
+        name: "Figma Design",
+        icon: "github-icon.svg",
+        url: "https://figma.com/",
+      });
+
+      vi.mocked(api.deleteApp).mockResolvedValue();
+      await user.click(
+        screen.getByRole("button", { name: "Delete Figma Design" }),
+      );
+      dialog = await screen.findByRole("dialog", {
+        name: "Delete Figma Design?",
+      });
+      await user.click(
+        within(dialog).getByRole("button", { name: "Delete app" }),
+      );
+      await waitFor(() => {
+        expect(screen.queryByText("Figma Design")).not.toBeInTheDocument();
+      });
+    },
+    10_000,
+  );
 
   it("redirects protected pages and auto-enters the dashboard after registration", async () => {
     useAppStore.setState({

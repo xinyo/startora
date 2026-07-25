@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/base/buttons/button";
 import { AppEditorDialog } from "@/components/dashboard/app-editor-dialog";
 import { DeleteAppDialog } from "@/components/dashboard/delete-app-dialog";
-import { getIconUrl } from "@/assets/registry";
+import { DEFAULT_ICON_NAME, getIconUrl } from "@/assets/registry";
 import { useAppStore } from "@/store";
 import type { AppItem } from "@/types/contracts";
 
@@ -88,13 +88,21 @@ function App() {
                   rel="noopener noreferrer"
                   aria-label={t("dashboard.openApp", { name: appItem.name })}
                 >
-                  {iconUrl ? (
-                    <img src={iconUrl} alt="" className="app-icon" />
-                  ) : (
-                    <span className="app-icon app-icon-fallback" aria-hidden="true">
-                      {appItem.name.slice(0, 1).toUpperCase()}
-                    </span>
-                  )}
+                  <img
+                    src={iconUrl}
+                    alt=""
+                    className="app-icon"
+                    loading="lazy"
+                    decoding="async"
+                    onError={(event) => {
+                      const fallbackUrl = getIconUrl(DEFAULT_ICON_NAME);
+                      if (
+                        event.currentTarget.getAttribute("src") !== fallbackUrl
+                      ) {
+                        event.currentTarget.src = fallbackUrl;
+                      }
+                    }}
+                  />
                   <span>
                     <strong>{appItem.name}</strong>
                     <small>{hostnameFrom(appItem.url)}</small>

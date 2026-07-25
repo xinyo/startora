@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Dialog, Modal, ModalOverlay } from "react-aria-components";
 import { useTranslation } from "react-i18next";
-import { iconAssets } from "@/assets/registry";
+import { DEFAULT_ICON_NAME } from "@/assets/registry";
 import { Button } from "@/components/base/buttons/button";
+import { IconSelector } from "@/components/dashboard/icon-selector";
 import { ApiClientError } from "@/lib/api";
 import { useAppStore } from "@/store";
 import type { AppItem } from "@/types/contracts";
@@ -34,7 +35,9 @@ export function AppEditorDialog({
   const createApp = useAppStore((state) => state.createApp);
   const updateApp = useAppStore((state) => state.updateApp);
   const [name, setName] = useState("");
-  const [icon, setIcon] = useState(iconAssets[0]?.name ?? "default-app.svg");
+  const [icon, setIcon] = useState(DEFAULT_ICON_NAME);
+  const [iconSearch, setIconSearch] = useState("");
+  const [iconSearchEdited, setIconSearchEdited] = useState(false);
   const [url, setUrl] = useState("");
   const [error, setError] = useState<unknown>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -43,8 +46,11 @@ export function AppEditorDialog({
     if (!isOpen) {
       return;
     }
-    setName(appItem?.name ?? "");
-    setIcon(appItem?.icon ?? iconAssets[0]?.name ?? "default-app.svg");
+    const appName = appItem?.name ?? "";
+    setName(appName);
+    setIcon(appItem?.icon ?? DEFAULT_ICON_NAME);
+    setIconSearch(appName);
+    setIconSearchEdited(false);
     setUrl(appItem?.url ?? "");
     setError(null);
   }, [appItem, isOpen]);
@@ -99,7 +105,13 @@ export function AppEditorDialog({
               <span>{t("appForm.name")}</span>
               <input
                 value={name}
-                onChange={(event) => setName(event.target.value)}
+                onChange={(event) => {
+                  const nextName = event.target.value;
+                  setName(nextName);
+                  if (!iconSearchEdited) {
+                    setIconSearch(nextName);
+                  }
+                }}
                 placeholder={t("appForm.namePlaceholder")}
                 required
                 maxLength={100}
@@ -112,26 +124,24 @@ export function AppEditorDialog({
               )}
             </label>
 
-            <label className="field">
+            <div className="field">
               <span>{t("appForm.icon")}</span>
-              <select
+              <IconSelector
                 value={icon}
-                onChange={(event) => setIcon(event.target.value)}
-                required
-                aria-invalid={Boolean(errorMessage(error, "icon", t))}
-              >
-                {iconAssets.map((asset) => (
-                  <option value={asset.name} key={asset.name}>
-                    {asset.name}
-                  </option>
-                ))}
-              </select>
+                searchValue={iconSearch}
+                onChange={setIcon}
+                onSearchChange={(nextSearch) => {
+                  setIconSearch(nextSearch);
+                  setIconSearchEdited(true);
+                }}
+                isInvalid={Boolean(errorMessage(error, "icon", t))}
+              />
               {errorMessage(error, "icon", t) && (
                 <small className="field-error">
                   {errorMessage(error, "icon", t)}
                 </small>
               )}
-            </label>
+            </div>
 
             <label className="field">
               <span>{t("appForm.url")}</span>
