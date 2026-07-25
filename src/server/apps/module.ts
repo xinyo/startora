@@ -3,12 +3,14 @@ import type { AppItem, AppItemInput } from "../../types/contracts.js";
 import type { Clock } from "../auth/module.js";
 import type { SqliteDatabase } from "../db/database.js";
 import { notFoundError, validationError } from "../errors.js";
+import type { CategoriesModule } from "../categories/module.js";
 
 interface AppRow {
   id: number;
   name: string;
   icon: string;
   url: string;
+  category_id: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -27,7 +29,11 @@ const defaultClock: Clock = {
 const iconPattern =
   /^[A-Za-z0-9][A-Za-z0-9._-]*\.(?:svg|png|webp|jpe?g|avif)$/i;
 
-function validateInput(input: unknown): AppItemInput {
+function validateInput(
+  input: unknown,
+  categories?: CategoriesModule,
+  userId?: number,
+): AppItemInput {
   const value =
     typeof input === "object" && input !== null
       ? (input as Record<string, unknown>)
@@ -35,6 +41,7 @@ function validateInput(input: unknown): AppItemInput {
   const name = typeof value.name === "string" ? value.name.trim() : "";
   const icon = typeof value.icon === "string" ? value.icon.trim() : "";
   const url = typeof value.url === "string" ? value.url.trim() : "";
+  const rawCategoryId = value.categoryId;
   const fields: Record<string, string> = {};
 
   if (name.length < 1 || name.length > 100) {
@@ -64,11 +71,32 @@ function validateInput(input: unknown): AppItemInput {
   if (url.length > 2_048) {
     fields.url = "APP_URL_INVALID";
   }
+
+  let categoryId: number | null = null;
+  if (rawCategoryId !== undefined && rawCategoryId !== null) {
+    const parsedId = Number(rawCategoryId);
+    if (
+      !Number.isSafeInteger(parsedId) ||
+      parsedId <= 0 ||
+      !Number.isFinite(parsedId)
+    ) {
+      fields.categoryId = "APP_CATEGORY_INVALID";
+    } else if (
+      categories &&
+      userId !== undefined &&
+      !categories.belongsToUser(parsedId, userId)
+    ) {
+      fields.categoryId = "CATEGORY_NOT_FOUND";
+    } else {
+      categoryId = parsedId;
+    }
+  }
+
   if (Object.keys(fields).length > 0) {
     throw validationError(fields);
   }
 
-  return { name, icon, url: normalizedUrl };
+  return { name, icon, url: normalizedUrl, categoryId };
 }
 
 function mapRow(row: AppRow): AppItem {
@@ -77,6 +105,7 @@ function mapRow(row: AppRow): AppItem {
     name: row.name,
     icon: row.icon,
     url: row.url,
+    categoryId: row.category_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -85,25 +114,26 @@ function mapRow(row: AppRow): AppItem {
 export function createAppCatalogModule(
   database: SqliteDatabase,
   clock: Clock = defaultClock,
+  categories?: CategoriesModule,
 ): AppCatalogModule {
   const listApps = database.prepare(`
-    SELECT id, name, icon, url, created_at, updated_at
+    SELECT id, name, icon, url, category_id, created_at, updated_at
     FROM apps
     WHERE user_id = ?
     ORDER BY created_at DESC, id DESC
   `);
   const findApp = database.prepare(`
-    SELECT id, name, icon, url, created_at, updated_at
+    SELECT id, name, icon, url, category_id, created_at, updated_at
     FROM apps
     WHERE id = ? AND user_id = ?
   `);
   const insertApp = database.prepare(`
-    INSERT INTO apps (user_id, name, icon, url, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO apps (user_id, name, icon, url, category_id, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
   const updateApp = database.prepare(`
     UPDATE apps
-    SET name = ?, icon = ?, url = ?, updated_at = ?
+    SET name = ?, icon = ?, url = ?, category_id = ?, updated_at = ?
     WHERE id = ? AND user_id = ?
   `);
   const deleteApp = database.prepare(
@@ -124,13 +154,14 @@ export function createAppCatalogModule(
     },
 
     create(userId, input) {
-      const app = validateInput(input);
+      const app = validateInput(input, categories, userId);
       const now = clock.now().toString();
       const result = insertApp.run(
         userId,
         app.name,
         app.icon,
         app.url,
+        app.categoryId ?? null,
         now,
         now,
       );
@@ -138,11 +169,12 @@ export function createAppCatalogModule(
     },
 
     update(userId, appId, input) {
-      const app = validateInput(input);
+      const app = validateInput(input, categories, userId);
       const result = updateApp.run(
         app.name,
         app.icon,
         app.url,
+        app.categoryId ?? null,
         clock.now().toString(),
         appId,
         userId,

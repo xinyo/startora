@@ -30,6 +30,11 @@ vi.mock("@/lib/api", () => {
       createApp: vi.fn(),
       updateApp: vi.fn(),
       deleteApp: vi.fn(),
+      listCategories: vi.fn(),
+      createCategory: vi.fn(),
+      updateCategory: vi.fn(),
+      deleteCategory: vi.fn(),
+      reorderCategories: vi.fn(),
     },
   };
 });
@@ -43,6 +48,7 @@ const appItem: AppItem = {
   name: "Docs",
   icon: "default-app.svg",
   url: "https://docs.example.com/",
+  categoryId: null,
   createdAt: "2026-07-23T00:00:00Z",
   updatedAt: "2026-07-23T00:00:00Z",
 };
@@ -66,6 +72,7 @@ describe("Zustand app store", () => {
   it("restores the cookie session and indexes the app list by id", async () => {
     vi.mocked(api.session).mockResolvedValue({ id: 1, username: "Ada" });
     vi.mocked(api.listApps).mockResolvedValue([appItem]);
+    vi.mocked(api.listCategories).mockResolvedValue([]);
 
     await useAppStore.getState().initialize();
 
@@ -91,6 +98,7 @@ describe("Zustand app store", () => {
   it("logs in, registers, and always clears state on logout", async () => {
     vi.mocked(api.login).mockResolvedValue({ id: 2, username: "Grace" });
     vi.mocked(api.listApps).mockResolvedValue([]);
+    vi.mocked(api.listCategories).mockResolvedValue([]);
     await useAppStore.getState().login("Grace", "password-one");
     expect(useAppStore.getState().user?.username).toBe("Grace");
 
@@ -117,6 +125,7 @@ describe("Zustand app store", () => {
       name: appItem.name,
       icon: appItem.icon,
       url: appItem.url,
+      categoryId: undefined,
     });
     expect(useAppStore.getState().appIds).toEqual([7]);
 

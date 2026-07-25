@@ -23,20 +23,30 @@ const registryMock = vi.hoisted(() => {
   }));
   return {
     defaultAsset,
-    iconAssets: [
+    allAssets: [
       defaultAsset,
       { name: "google-drive.svg", url: "/google-drive.svg" },
       ...generatedAssets,
     ],
+    urlMap: Object.fromEntries(
+      [
+        defaultAsset,
+        { name: "google-drive.svg", url: "/google-drive.svg" },
+        ...generatedAssets,
+      ].map((a) => [a.name, a.url]),
+    ) as Record<string, string>,
   };
 });
 
 vi.mock("@/assets/registry", () => ({
   DEFAULT_ICON_NAME: registryMock.defaultAsset.name,
-  iconAssets: registryMock.iconAssets,
+  iconManifest: registryMock.allAssets.map((a) => a.name),
   getIconUrl: (iconName: string) =>
-    registryMock.iconAssets.find((asset) => asset.name === iconName)?.url ??
-    registryMock.defaultAsset.url,
+    registryMock.urlMap[iconName] ?? registryMock.defaultAsset.url,
+  loadIconUrl: (iconName: string) =>
+    Promise.resolve(
+      registryMock.urlMap[iconName] ?? registryMock.defaultAsset.url,
+    ),
 }));
 
 import { IconSelector } from "@/components/dashboard/icon-selector";
@@ -110,8 +120,11 @@ describe("IconSelector", () => {
   });
 
   it("renders results progressively as the grid is scrolled", async () => {
-    render(<SelectorHarness />);
+    render(<SelectorHarness initialSearch="icon" />);
 
+    await waitFor(() => {
+      expect(screen.getByRole("radiogroup", { name: "Icon" })).toBeVisible();
+    });
     const grid = screen.getByRole("radiogroup", { name: "Icon" });
     expect(screen.getAllByRole("radio")).toHaveLength(60);
     Object.defineProperties(grid, {

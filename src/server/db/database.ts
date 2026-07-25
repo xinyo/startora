@@ -40,6 +40,24 @@ const migrations = [
       CREATE INDEX apps_user_created_idx ON apps(user_id, created_at DESC, id DESC);
     `,
   },
+  {
+    version: 2,
+    sql: `
+      CREATE TABLE categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        position INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      ) STRICT;
+
+      CREATE INDEX categories_user_position_idx ON categories(user_id, position, id);
+
+      ALTER TABLE apps ADD COLUMN category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL;
+      CREATE INDEX apps_category_idx ON apps(user_id, category_id);
+    `,
+  },
 ] as const;
 
 export function openDatabase(databasePath: string): SqliteDatabase {
