@@ -6,7 +6,7 @@ WORKDIR /app
 
 # ---- Stage 2: install all dependencies ----
 FROM base AS deps
-COPY pnpm-lock.yaml package.json ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 RUN pnpm install --frozen-lockfile
 
 # ---- Stage 3: build the application ----
@@ -14,19 +14,24 @@ FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm run build
-# Remove devDependencies — only production modules survive
-RUN pnpm prune --prod
 
-# ---- Stage 4: minimal production image ----
+# ---- Stage 4: install production dependencies only ----
+FROM base AS production-deps
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+RUN pnpm install --prod --frozen-lockfile
+RUN node -e "const Database = require('better-sqlite3'); new Database(':memory:').close()"
+
+# ---- Stage 5: minimal production image ----
 FROM node:24-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=build /app/node_modules ./node_modules
+COPY --from=production-deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json ./
 
 # Writable volume for SQLite database
+RUN mkdir -p /app/data && chown node:node /app/data
 VOLUME ["/app/data"]
 
 EXPOSE 3000
