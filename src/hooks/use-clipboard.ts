@@ -72,6 +72,7 @@ export const useClipboard = (): UseClipboardReturnType => {
         return { success: true };
       } catch (err) {
         // If modern method fails, try fallback
+        console.error(err);
         return fallback(text, id);
       }
     }

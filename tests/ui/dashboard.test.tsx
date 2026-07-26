@@ -175,7 +175,10 @@ describe("dashboard UI", () => {
       icon: "github-icon.svg",
     };
     vi.mocked(api.updateApp).mockResolvedValue(updated);
-    await user.click(screen.getByRole("button", { name: "Edit Figma" }));
+    await user.click(
+      screen.getByRole("button", { name: "Menu for Figma" }),
+    );
+    await user.click(await screen.findByRole("menuitem", { name: "Edit" }));
     dialog = await screen.findByRole("dialog", { name: "Edit app" });
     const nameInput = within(dialog).getByLabelText("App name");
     const iconSearch = within(dialog).getByLabelText("Search icons");
@@ -202,8 +205,9 @@ describe("dashboard UI", () => {
 
     vi.mocked(api.deleteApp).mockResolvedValue();
     await user.click(
-      screen.getByRole("button", { name: "Delete Figma Design" }),
+      screen.getByRole("button", { name: "Menu for Figma Design" }),
     );
+    await user.click(await screen.findByRole("menuitem", { name: "Delete" }));
     dialog = await screen.findByRole("dialog", {
       name: "Delete Figma Design?",
     });

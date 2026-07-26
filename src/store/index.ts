@@ -68,15 +68,24 @@ function indexCategories(categories: CategoryItem[]): {
   return { categoriesById, categoryIds };
 }
 
-const anonymousState = {
-  authStatus: "anonymous" as const,
+const anonymousState: Pick<
+  AppStore,
+  | "authStatus"
+  | "user"
+  | "appsById"
+  | "appIds"
+  | "categoriesById"
+  | "categoryIds"
+  | "initialized"
+> = {
+  authStatus: "anonymous",
   user: null,
   appsById: {},
   appIds: [],
   categoriesById: {},
   categoryIds: [],
   initialized: true,
-} as const;
+};
 
 export const useAppStore = create<AppStore>((set, get) => ({
   authStatus: "idle",

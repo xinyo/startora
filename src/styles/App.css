@@ -108,6 +108,12 @@ button {
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  display: flex;
+  align-items: center;
+}
+
+.eyebrow-logo {
+  height: 20px;
 }
 
 .welcome-shell {
@@ -676,8 +682,9 @@ button {
   margin: 0 0 0.75rem;
   font-size: 1.05rem;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--color-text-quaternary);
   letter-spacing: -0.01em;
+  text-transform: uppercase;
 }
 
 .category-section-grid {

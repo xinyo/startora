@@ -15,13 +15,11 @@ not the session credential.
 ```powershell
 corepack enable
 pnpm install
-pnpm approve-builds
 ```
 
-When `pnpm approve-builds` prompts for packages, select both `better-sqlite3`
-and `esbuild` (press `a` to select all), then confirm the selection. pnpm blocks
-dependency build scripts by default; without this approval, the server cannot
-load the native `better-sqlite3` binding.
+The repository's pnpm workspace configuration allows the required
+`better-sqlite3` and `esbuild` install scripts. pnpm blocks other dependency
+build scripts by default.
 
 ## Development
 
