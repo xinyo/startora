@@ -6,7 +6,6 @@ import { Button } from "@/components/base/buttons/button";
 import { ApiClientError } from "@/lib/api";
 import { useAppStore } from "@/store";
 import type { CategoryItem } from "@/types/contracts";
-import { cx } from "@/utils/cx";
 
 interface ManageCategoriesDialogProps {
   isOpen: boolean;
@@ -21,6 +20,7 @@ function CategoryRow({
   onMoveDown,
   isFirst,
   isLast,
+  isDeleting,
 }: {
   category: CategoryItem;
   onEdit: (id: number, name: string) => void;
@@ -29,6 +29,7 @@ function CategoryRow({
   onMoveDown: (id: number) => void;
   isFirst: boolean;
   isLast: boolean;
+  isDeleting: boolean;
 }) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
@@ -110,6 +111,7 @@ function CategoryRow({
         <Button
           color="link-destructive"
           size="xs"
+          isLoading={isDeleting}
           onPress={() => onDelete(category.id)}
         >
           {t("common.delete")}
@@ -286,6 +288,7 @@ export function ManageCategoriesDialog({
                   onMoveDown={handleMoveDown}
                   isFirst={index === 0}
                   isLast={index === categories.length - 1}
+                  isDeleting={deletingId === cat.id}
                 />
               ))}
             </div>

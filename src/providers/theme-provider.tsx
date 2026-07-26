@@ -1,41 +1,11 @@
 import type { ReactNode } from "react";
-import { createContext, useContext, useEffect, useState } from "react";
-
-type Theme = "light" | "dark" | "system";
-
-interface ThemeContextType {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-}
-
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-export const useTheme = (): ThemeContextType => {
-  const context = useContext(ThemeContext);
-
-  if (context === undefined) {
-    throw new Error("useTheme must be used within a ThemeProvider");
-  }
-
-  return context;
-};
+import { useEffect, useState } from "react";
+import { ThemeContext, type Theme } from "@/hooks/use-theme"; // Import from the new file
 
 interface ThemeProviderProps {
   children: ReactNode;
-  /**
-   * The class to add to the root element when the theme is dark
-   * @default "dark-mode"
-   */
   darkModeClass?: string;
-  /**
-   * The default theme to use if no theme is stored in localStorage
-   * @default "system"
-   */
   defaultTheme?: Theme;
-  /**
-   * The key to use to store the theme in localStorage
-   * @default "ui-theme"
-   */
   storageKey?: string;
 }
 
@@ -45,46 +15,48 @@ export const ThemeProvider = ({
   storageKey = "ui-theme",
   darkModeClass = "dark-mode",
 }: ThemeProviderProps) => {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== "undefined") {
-      const savedTheme = localStorage.getItem(storageKey) as Theme | null;
-      return savedTheme || defaultTheme;
-    }
-    return defaultTheme;
-  });
+  // BEST PRACTICE 1: SSR / Hydration Safety (See explanation below)
+  const [theme, setTheme] = useState<Theme>(defaultTheme);
 
+  // BEST PRACTICE 2: Fix Exhaustive Deps warning
   useEffect(() => {
-    const applyTheme = () => {
+    // 1. Read from local storage on mount
+    const savedTheme = localStorage.getItem(storageKey) as Theme | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+
+    // 2. Apply theme logic
+    const applyTheme = (currentTheme: Theme) => {
       const root = window.document.documentElement;
 
-      if (theme === "system") {
+      if (currentTheme === "system") {
         const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
           .matches
           ? "dark"
           : "light";
-
         root.classList.toggle(darkModeClass, systemTheme === "dark");
         localStorage.removeItem(storageKey);
       } else {
-        root.classList.toggle(darkModeClass, theme === "dark");
-        localStorage.setItem(storageKey, theme);
+        root.classList.toggle(darkModeClass, currentTheme === "dark");
+        localStorage.setItem(storageKey, currentTheme);
       }
     };
 
-    applyTheme();
+    // Apply initial theme (saved or default)
+    applyTheme(savedTheme || defaultTheme);
 
-    // Listen for system theme changes
+    // 3. Listen for system theme changes
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-
     const handleChange = () => {
       if (theme === "system") {
-        applyTheme();
+        applyTheme("system");
       }
     };
 
     mediaQuery.addEventListener("change", handleChange);
     return () => mediaQuery.removeEventListener("change", handleChange);
-  }, [theme]);
+  }, [theme, storageKey, darkModeClass, defaultTheme]); // Added missing dependencies
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
