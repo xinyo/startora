@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import express from "express";
 import type {
   ErrorRequestHandler,
+  Express,
   NextFunction,
   Request,
   RequestHandler,
@@ -33,6 +34,10 @@ type AsyncHandler = (
   next: NextFunction,
 ) => Promise<void>;
 
+type IdRouteParams = {
+  id: string;
+};
+
 function asyncHandler(handler: AsyncHandler): RequestHandler {
   return (request, response, next) => {
     void handler(request, response, next).catch(next);
@@ -59,7 +64,7 @@ function parseCategoryId(rawId: string): number {
   return categoryId;
 }
 
-export function createHttpApp(options: HttpAppOptions) {
+export function createHttpApp(options: HttpAppOptions): Express {
   const app = express();
 
   app.disable("x-powered-by");
@@ -150,7 +155,7 @@ export function createHttpApp(options: HttpAppOptions) {
     }
   });
 
-  app.put("/api/apps/:id", requireSession, (request, response, next) => {
+  app.put<IdRouteParams>("/api/apps/:id", requireSession, (request, response, next) => {
     try {
       const appItem = options.apps.update(
         sessionFrom(response).user.id,
@@ -163,7 +168,7 @@ export function createHttpApp(options: HttpAppOptions) {
     }
   });
 
-  app.delete("/api/apps/:id", requireSession, (request, response, next) => {
+  app.delete<IdRouteParams>("/api/apps/:id", requireSession, (request, response, next) => {
     try {
       options.apps.delete(
         sessionFrom(response).user.id,
@@ -193,7 +198,7 @@ export function createHttpApp(options: HttpAppOptions) {
     }
   });
 
-  app.put("/api/categories/:id", requireSession, (request, response, next) => {
+  app.put<IdRouteParams>("/api/categories/:id", requireSession, (request, response, next) => {
     try {
       const categoryItem = options.categories.update(
         sessionFrom(response).user.id,
@@ -206,7 +211,7 @@ export function createHttpApp(options: HttpAppOptions) {
     }
   });
 
-  app.delete(
+  app.delete<IdRouteParams>(
     "/api/categories/:id",
     requireSession,
     (request, response, next) => {
