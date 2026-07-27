@@ -12,6 +12,7 @@ import type {
 import type { AppCatalogModule } from "../apps/module.js";
 import type { AuthenticatedSession, AuthModule } from "../auth/module.js";
 import type { CategoriesModule } from "../categories/module.js";
+import type { TrustProxySetting } from "../config.js";
 import { AppError, notFoundError } from "../errors.js";
 import {
   clearSessionCookie,
@@ -23,8 +24,9 @@ export interface HttpAppOptions {
   auth: AuthModule;
   apps: AppCatalogModule;
   categories: CategoriesModule;
-  appOrigin: string;
-  secureCookies: boolean;
+  appOrigin?: string;
+  secureCookies?: boolean;
+  trustProxy?: TrustProxySetting;
   clientDirectory?: string;
 }
 
@@ -48,6 +50,25 @@ function sessionFrom(response: Response): AuthenticatedSession {
   return (response.locals as { auth: AuthenticatedSession }).auth;
 }
 
+function originRejectedError(): AppError {
+  return new AppError(
+    403,
+    "ORIGIN_REJECTED",
+    "The request origin is not allowed.",
+  );
+}
+
+function normalizeOrigin(origin: string): string {
+  return new URL(origin).origin;
+}
+
+function getRequestOrigin(request: Request): string {
+  if (!request.host) {
+    throw originRejectedError();
+  }
+  return normalizeOrigin(`${request.protocol}://${request.host}`);
+}
+
 function parseAppId(rawId: string): number {
   const appId = Number(rawId);
   if (!Number.isSafeInteger(appId) || appId <= 0) {
@@ -66,6 +87,13 @@ function parseCategoryId(rawId: string): number {
 
 export function createHttpApp(options: HttpAppOptions): Express {
   const app = express();
+  const configuredAppOrigin = options.appOrigin
+    ? normalizeOrigin(options.appOrigin)
+    : undefined;
+
+  if (options.trustProxy !== undefined) {
+    app.set("trust proxy", options.trustProxy);
+  }
 
   app.disable("x-powered-by");
   app.use((_request, response, next) => {
@@ -82,19 +110,29 @@ export function createHttpApp(options: HttpAppOptions): Express {
       return;
     }
 
-    if (request.headers.origin !== options.appOrigin) {
-      next(
-        new AppError(
-          403,
-          "ORIGIN_REJECTED",
-          "The request origin is not allowed.",
-        ),
-      );
+    const originHeader = request.get("origin");
+    if (!originHeader) {
+      next(originRejectedError());
+      return;
+    }
+
+    try {
+      const requestOrigin = normalizeOrigin(originHeader);
+      const allowedOrigin = configuredAppOrigin ?? getRequestOrigin(request);
+      if (requestOrigin !== allowedOrigin) {
+        next(originRejectedError());
+        return;
+      }
+    } catch (error) {
+      next(error instanceof AppError ? error : originRejectedError());
       return;
     }
 
     next();
   });
+
+  const shouldUseSecureCookies = (request: Request): boolean =>
+    options.secureCookies ?? request.secure;
 
   const requireSession: RequestHandler = (request, response, next) => {
     try {
@@ -102,11 +140,11 @@ export function createHttpApp(options: HttpAppOptions): Express {
       const authenticated = options.auth.authenticate(token);
       response.locals.auth = authenticated;
       if (token) {
-        setSessionCookie(response, token, options.secureCookies);
+        setSessionCookie(response, token, shouldUseSecureCookies(request));
       }
       next();
     } catch (error) {
-      clearSessionCookie(response, options.secureCookies);
+      clearSessionCookie(response, shouldUseSecureCookies(request));
       next(error);
     }
   };
@@ -115,7 +153,7 @@ export function createHttpApp(options: HttpAppOptions): Express {
     "/api/auth/register",
     asyncHandler(async (request, response) => {
       const result = await options.auth.register(request.body ?? {});
-      setSessionCookie(response, result.token, options.secureCookies);
+      setSessionCookie(response, result.token, shouldUseSecureCookies(request));
       response.status(201).json({ user: result.user });
     }),
   );
@@ -124,7 +162,7 @@ export function createHttpApp(options: HttpAppOptions): Express {
     "/api/auth/login",
     asyncHandler(async (request, response) => {
       const result = await options.auth.login(request.body ?? {});
-      setSessionCookie(response, result.token, options.secureCookies);
+      setSessionCookie(response, result.token, shouldUseSecureCookies(request));
       response.json({ user: result.user });
     }),
   );
@@ -135,7 +173,7 @@ export function createHttpApp(options: HttpAppOptions): Express {
 
   app.post("/api/auth/logout", (request, response) => {
     options.auth.logout(readSessionToken(request.headers.cookie));
-    clearSessionCookie(response, options.secureCookies);
+    clearSessionCookie(response, shouldUseSecureCookies(request));
     response.status(204).send();
   });
 

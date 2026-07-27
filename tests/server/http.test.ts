@@ -3,27 +3,42 @@ import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createAppCatalogModule } from "../../src/server/apps/module.js";
 import { createAuthModule } from "../../src/server/auth/module.js";
+import type { Clock } from "../../src/server/auth/module.js";
+import { createCategoriesModule } from "../../src/server/categories/module.js";
 import { openDatabase } from "../../src/server/db/database.js";
 import type { SqliteDatabase } from "../../src/server/db/database.js";
 import { createHttpApp } from "../../src/server/http/app.js";
+import type { HttpAppOptions } from "../../src/server/http/app.js";
 
 const origin = "http://localhost:5173";
+const clock: Clock = {
+  now: () => Temporal.Instant.from("2026-07-23T00:00:00Z"),
+};
 
 describe("Express HTTP adapter", () => {
   let database: SqliteDatabase;
   let app: ReturnType<typeof createHttpApp>;
 
-  beforeEach(() => {
-    database = openDatabase(":memory:");
-    const clock = {
-      now: () => Temporal.Instant.from("2026-07-23T00:00:00Z"),
-    };
-    app = createHttpApp({
+  function createTestHttpApp(
+    overrides: Partial<
+      Pick<HttpAppOptions, "appOrigin" | "secureCookies" | "trustProxy">
+    > = {},
+  ): ReturnType<typeof createHttpApp> {
+    const categories = createCategoriesModule(database, clock);
+    return createHttpApp({
       auth: createAuthModule(database, {
         clock,
         generateToken: () => "http-test-token",
       }),
-      apps: createAppCatalogModule(database, clock),
+      apps: createAppCatalogModule(database, clock, categories),
+      categories,
+      ...overrides,
+    });
+  }
+
+  beforeEach(() => {
+    database = openDatabase(":memory:");
+    app = createTestHttpApp({
       appOrigin: origin,
       secureCookies: true,
     });
@@ -73,6 +88,55 @@ describe("Express HTTP adapter", () => {
       .expect(({ body }) => {
         expect(body.error.code).toBe("ORIGIN_REJECTED");
       });
+  });
+
+  it("derives the allowed origin and cookie security from a direct request", async () => {
+    const directApp = createTestHttpApp();
+    const registration = await request(directApp)
+      .post("/api/auth/register")
+      .set("Host", "startora.test:3000")
+      .set("Origin", "http://startora.test:3000")
+      .send({ username: "Direct.User", password: "password-one" })
+      .expect(201);
+
+    const cookie = registration.headers["set-cookie"][0] as string;
+    expect(cookie).not.toContain("Secure");
+  });
+
+  it("rejects mutations without an origin", async () => {
+    await request(app)
+      .post("/api/auth/register")
+      .send({ username: "Http.User", password: "password-one" })
+      .expect(403)
+      .expect(({ body }) => {
+        expect(body.error.code).toBe("ORIGIN_REJECTED");
+      });
+  });
+
+  it("uses forwarded origin details only when the proxy is trusted", async () => {
+    const proxyHeaders = {
+      Host: "startora.internal:3000",
+      Origin: "https://startora.example",
+      "X-Forwarded-Host": "startora.example",
+      "X-Forwarded-Proto": "https",
+    };
+
+    await request(createTestHttpApp())
+      .post("/api/auth/register")
+      .set(proxyHeaders)
+      .send({ username: "Untrusted.Proxy", password: "password-one" })
+      .expect(403);
+
+    const registration = await request(
+      createTestHttpApp({ trustProxy: true }),
+    )
+      .post("/api/auth/register")
+      .set(proxyHeaders)
+      .send({ username: "Trusted.Proxy", password: "password-one" })
+      .expect(201);
+
+    const cookie = registration.headers["set-cookie"][0] as string;
+    expect(cookie).toContain("Secure");
   });
 
   it("supports authenticated app CRUD and JSON validation failures", async () => {

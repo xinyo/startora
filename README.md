@@ -49,12 +49,19 @@ configuration remain the responsibility of the process manager.
 
 - `PORT`: Express port, default `3000`.
 - `DATABASE_PATH`: SQLite file, default `data/startora.sqlite`.
-- `APP_ORIGIN`: exact browser origin accepted for mutations. Development
-  defaults to `http://localhost:5173`.
-- `NODE_ENV`: set to `production` to enable the cookie's `Secure` attribute.
+- `APP_ORIGIN`: optional exact browser origin accepted for mutations. When it
+  is omitted, Startora derives the allowed origin from the request protocol and
+  host. The Vite development server uses `http://localhost:5173`.
+- `COOKIE_SECURE`: optional `true` or `false` override for the session cookie's
+  `Secure` attribute. When omitted, Startora follows the request protocol.
+- `TRUST_PROXY`: optional Express proxy trust setting, such as `1` for one
+  trusted proxy hop or `loopback` for a local proxy. Leave it unset when the
+  container receives browser traffic directly.
+- `NODE_ENV`: use `production` for production runtime behavior.
 
-Production must run behind HTTPS. SQLite is intended for one Startora server
-process; use a network database before scaling to multiple writers.
+HTTPS is recommended for deployments exposed beyond a trusted network. SQLite
+is intended for one Startora server process; use a network database before
+scaling to multiple writers.
 
 ## App icons
 
