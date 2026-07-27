@@ -184,12 +184,15 @@ function App() {
 
       {initialized && apps.length === 0 ? (
         <section className="empty-state">
-          <div className="empty-icon" aria-hidden="true">
+          <Button
+            className="empty-icon u-press"
+            aria-hidden="true"
+            onPress={openCreateDialog}
+          >
             +
-          </div>
+          </Button>
           <h2>{t("dashboard.noAppsTitle")}</h2>
           <p>{t("dashboard.noAppsBody")}</p>
-          <Button onPress={openCreateDialog}>{t("dashboard.addApp")}</Button>
         </section>
       ) : (
         <>

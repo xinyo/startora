@@ -1,13 +1,16 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Button } from "@/components/base/buttons/button";
 import { ApiClientError } from "@/lib/api";
+import { PASSWORD_LENGTH } from "@/shared/auth-policy";
 import { useAppStore } from "@/store";
+import AppLogo from "@/assets/logo-group.svg";
 
 type AuthMode = "login" | "register";
 
-function authErrorMessage(error: unknown, t: (key: string) => string): string {
+function authErrorMessage(error: unknown, t: TFunction): string {
   if (!(error instanceof ApiClientError)) {
     return t("auth.requestFailed");
   }
@@ -22,7 +25,7 @@ function authErrorMessage(error: unknown, t: (key: string) => string): string {
     return t("auth.usernameInvalid");
   }
   if (error.fields?.password) {
-    return t("auth.passwordInvalid");
+    return t("auth.passwordInvalid", PASSWORD_LENGTH);
   }
   return t("auth.requestFailed");
 }
@@ -62,7 +65,6 @@ export function Welcome() {
   return (
     <main className="welcome-shell">
       <section className="welcome-story">
-        <p className="brand-mark">{t("auth.brand")}</p>
         <div>
           <p className="eyebrow">{t("dashboard.eyebrow")}</p>
           <h1>{t("auth.heading")}</h1>
@@ -77,6 +79,7 @@ export function Welcome() {
 
       <section className="auth-panel" aria-label={t("auth.brand")}>
         <div className="auth-card">
+          <img className="brand-mark" src={AppLogo} alt="" />
           <div className="auth-tabs" role="tablist">
             <button
               type="button"
@@ -121,9 +124,12 @@ export function Welcome() {
                 }
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder={t("auth.passwordPlaceholder")}
-                minLength={8}
-                maxLength={128}
+                placeholder={t(
+                  "auth.passwordPlaceholder",
+                  PASSWORD_LENGTH,
+                )}
+                minLength={PASSWORD_LENGTH.min}
+                maxLength={PASSWORD_LENGTH.max}
                 required
               />
             </label>

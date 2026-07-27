@@ -25,7 +25,7 @@ void i18n.use(initReactI18next).init({
           username: "Username",
           usernamePlaceholder: "your.username",
           password: "Password",
-          passwordPlaceholder: "At least 8 characters",
+          passwordPlaceholder: "At least {{min}} characters",
           login: "Log in",
           loggingIn: "Logging in…",
           register: "Create account",
@@ -34,12 +34,13 @@ void i18n.use(initReactI18next).init({
           usernameTaken: "That username is already in use.",
           usernameInvalid:
             "Use 3–50 letters, numbers, dots, underscores, or hyphens.",
-          passwordInvalid: "Use a password between 8 and 128 characters.",
+          passwordInvalid:
+            "Use a password between {{min}} and {{max}} characters.",
           requestFailed:
             "We could not complete that request. Please try again.",
         },
         dashboard: {
-          eyebrow: "Dashboard",
+          eyebrow: "Welcome",
           greeting: "Welcome, {{username}}",
           subtitle: "Everything you need, one click away.",
           logout: "Log out",

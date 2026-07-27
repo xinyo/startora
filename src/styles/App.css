@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./theme.css";
+@import "./utilities.css";
 
 @plugin "tailwindcss-animate";
 @plugin "tailwindcss-react-aria-components";
@@ -130,17 +131,15 @@ button {
   justify-content: space-between;
   overflow: hidden;
   padding: clamp(2rem, 6vw, 5rem);
-  color: #fff;
+  color: var(--color-text-white);
   background:
     linear-gradient(145deg, rgb(16 24 40 / 22%), transparent 55%),
     linear-gradient(135deg, #53389e, #7f56d9 55%, #9e77ed);
 }
 
 .brand-mark {
-  margin: 0;
-  font-size: 1.4rem;
-  font-weight: 800;
-  letter-spacing: -0.04em;
+  height: 24px;
+  margin: 0 auto clamp(1.5rem, 4vw, 2.5rem);
 }
 
 .welcome-story>div:not(.story-orbit) {

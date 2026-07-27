@@ -1,0 +1,9 @@
+.u-press {
+  transition: scale 0.15s ease;
+  /* Add this for a smooth press! */
+  cursor: pointer;
+
+  &:active {
+    scale: 0.97;
+  }
+}
