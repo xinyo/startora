@@ -69,8 +69,14 @@ Commit app icons to `src/assets` using `.svg`, `.png`, `.webp`, `.jpg`,
 `.jpeg`, or `.avif`. The dashboard builds its picker from those files and saves
 only the basename, such as `figma.svg`, to SQLite.
 
-If an icon is removed after an app has been saved, the dashboard displays a
-letter fallback instead of a broken image.
+Users can instead enter a direct HTTP(S) image URL. Startora stores that URL in
+the existing icon field and loads the image in the browser; it does not download
+or store the image itself. File-page URLs, such as GitHub `/blob/` pages, are not
+image URLs—use the provider's direct or raw URL.
+
+If a bundled icon is removed or a remote icon cannot be loaded after an app has
+been saved, the dashboard displays the default app icon instead of a broken
+image.
 
 ## Data and security
 

@@ -20,6 +20,15 @@ function hostnameFrom(url: string): string {
   }
 }
 
+function isRemoteIconUrl(icon: string): boolean {
+  try {
+    const parsedUrl = new URL(icon);
+    return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function App() {
   const { t } = useTranslation();
   const user = useAppStore((state) => state.user);
@@ -71,7 +80,7 @@ function App() {
     const unique = [...new Set(iconNames)];
     void Promise.all(
       unique.map(async (name) => {
-        const url = await loadIconUrl(name);
+        const url = isRemoteIconUrl(name) ? name : await loadIconUrl(name);
         return { name, url };
       }),
     ).then((entries) => {
@@ -139,6 +148,7 @@ function App() {
               className="app-icon"
               loading="lazy"
               decoding="async"
+              referrerPolicy="no-referrer"
               onError={(event) => {
                 const fallbackUrl = getIconUrl(DEFAULT_ICON_NAME);
                 if (event.currentTarget.getAttribute("src") !== fallbackUrl) {

@@ -281,6 +281,13 @@ button {
   gap: 0.55rem;
 }
 
+.icon-field-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .icon-selector-search {
   display: grid;
   gap: 0.45rem;
