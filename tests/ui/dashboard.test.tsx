@@ -70,6 +70,7 @@ import { DEFAULT_ICON_NAME, getIconUrl } from "@/assets/registry";
 import i18n from "@/i18n";
 import { api } from "@/lib/api";
 import { AppRouter } from "@/router";
+import { PASSWORD_LENGTH } from "@/shared/auth-policy";
 import { useAppStore } from "@/store";
 import type { AppItem } from "@/types/contracts";
 
@@ -245,7 +246,20 @@ describe("dashboard UI", () => {
     ).toBeVisible();
     await user.click(screen.getByRole("tab", { name: "Create account" }));
     await user.type(screen.getByLabelText("Username"), "New.User");
-    await user.type(screen.getByLabelText("Password"), "password-one");
+    const passwordInput = screen.getByLabelText("Password");
+    expect(passwordInput).toHaveAttribute(
+      "minlength",
+      String(PASSWORD_LENGTH.min),
+    );
+    expect(passwordInput).toHaveAttribute(
+      "maxlength",
+      String(PASSWORD_LENGTH.max),
+    );
+    expect(passwordInput).toHaveAttribute(
+      "placeholder",
+      `At least ${PASSWORD_LENGTH.min} characters`,
+    );
+    await user.type(passwordInput, "password-one");
     await user.click(screen.getByRole("button", { name: "Create account" }));
 
     expect(

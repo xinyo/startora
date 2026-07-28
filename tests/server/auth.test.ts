@@ -5,6 +5,7 @@ import type { Clock } from "../../src/server/auth/module.js";
 import { openDatabase } from "../../src/server/db/database.js";
 import type { SqliteDatabase } from "../../src/server/db/database.js";
 import { AppError } from "../../src/server/errors.js";
+import { PASSWORD_LENGTH } from "../../src/shared/auth-policy.js";
 
 describe("authentication module", () => {
   let database: SqliteDatabase;
@@ -105,11 +106,14 @@ describe("authentication module", () => {
     expect(() => auth.authenticate(second.token)).toThrow(AppError);
   });
 
-  it("validates usernames and password lengths at the interface", async () => {
+  it("validates usernames and the shared password length boundaries", async () => {
     const auth = createModule();
 
     await expect(
-      auth.register({ username: "no spaces", password: "short" }),
+      auth.register({
+        username: "no spaces",
+        password: "x".repeat(PASSWORD_LENGTH.min - 1),
+      }),
     ).rejects.toMatchObject({
       status: 400,
       code: "VALIDATION_ERROR",
@@ -117,6 +121,28 @@ describe("authentication module", () => {
         username: "USERNAME_INVALID",
         password: "PASSWORD_INVALID",
       },
+    });
+
+    await expect(
+      auth.register({
+        username: "Too.Long",
+        password: "x".repeat(PASSWORD_LENGTH.max + 1),
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: "VALIDATION_ERROR",
+      fields: {
+        password: "PASSWORD_INVALID",
+      },
+    });
+
+    await expect(
+      auth.register({
+        username: "At.Minimum",
+        password: "x".repeat(PASSWORD_LENGTH.min),
+      }),
+    ).resolves.toMatchObject({
+      user: { username: "At.Minimum" },
     });
   });
 });

@@ -1,17 +1,9 @@
-import {
-  createHash,
-  randomBytes,
-  scrypt,
-  timingSafeEqual,
-} from "node:crypto";
+import { createHash, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { Temporal } from "@js-temporal/polyfill";
+import { PASSWORD_LENGTH } from "../../shared/auth-policy.js";
 import type { User } from "../../types/contracts.js";
 import type { SqliteDatabase } from "../db/database.js";
-import {
-  AppError,
-  unauthorizedError,
-  validationError,
-} from "../errors.js";
+import { AppError, unauthorizedError, validationError } from "../errors.js";
 
 const SESSION_HOURS = 7 * 24;
 const USERNAME_PATTERN = /^[A-Za-z0-9._-]{3,50}$/;
@@ -98,16 +90,12 @@ async function hashPassword(password: string): Promise<string> {
   ].join("$");
 }
 
-async function verifyPassword(password: string, encoded: string): Promise<boolean> {
+async function verifyPassword(
+  password: string,
+  encoded: string,
+): Promise<boolean> {
   const [algorithm, n, r, p, salt, expected] = encoded.split("$");
-  if (
-    algorithm !== "scrypt" ||
-    !n ||
-    !r ||
-    !p ||
-    !salt ||
-    !expected
-  ) {
+  if (algorithm !== "scrypt" || !n || !r || !p || !salt || !expected) {
     return false;
   }
 
@@ -138,7 +126,10 @@ function validateCredentials(credentials: {
   if (!USERNAME_PATTERN.test(username)) {
     fields.username = "USERNAME_INVALID";
   }
-  if (password.length < 8 || password.length > 128) {
+  if (
+    password.length < PASSWORD_LENGTH.min ||
+    password.length > PASSWORD_LENGTH.max
+  ) {
     fields.password = "PASSWORD_INVALID";
   }
   if (Object.keys(fields).length > 0) {
