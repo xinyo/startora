@@ -48,3 +48,8 @@ Logout revokes the current browser session, not every session belonging to the u
 SQLite is intended for a single Node process or small deployment. A multi-instance/high-write deployment should later replace it with PostgreSQL behind the same module interfaces.
 Production runs behind HTTPS and should enforce additional edge-level login rate limiting.
 Existing React migration work is preserved; deleted Vue/PostgreSQL files are not restored.
+
+
+
+# todo
+https://github.com/homarr-labs/dashboard-icons/blob/main/svg/1337x.svg
