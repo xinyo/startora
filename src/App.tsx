@@ -1,16 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
+import AppLogo from "@/assets/logo-group.svg";
+import { DEFAULT_ICON_NAME, getIconUrl, loadIconUrl } from "@/assets/registry";
 import { Button } from "@/components/base/buttons/button";
+import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { AppEditorDialog } from "@/components/dashboard/app-editor-dialog";
 import { CategorySection } from "@/components/dashboard/category-section";
 import { DeleteAppDialog } from "@/components/dashboard/delete-app-dialog";
 import { ManageCategoriesDialog } from "@/components/dashboard/manage-categories-dialog";
-import { Edit01, Trash01 } from "@untitledui/icons";
-import AppLogo from "@/assets/logo-group.svg";
-import { Dropdown } from "@/components/base/dropdown/dropdown";
-import { DEFAULT_ICON_NAME, getIconUrl, loadIconUrl } from "@/assets/registry";
 import { useAppStore } from "@/store";
 import type { AppItem } from "@/types/contracts";
+import { Edit01, Trash01 } from "@untitledui/icons";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 function hostnameFrom(url: string): string {
   try {
@@ -214,12 +214,9 @@ function App() {
           {categoryIds.map((catId) => {
             const category = categoriesById[catId];
             const catApps = groupedApps.categorized[catId];
-            if (!category || !catApps || catApps.length === 0) {
-              return null;
-            }
             return (
               <CategorySection key={catId} name={category.name}>
-                {catApps.map(renderAppCard)}
+                {catApps && catApps.map(renderAppCard)}
               </CategorySection>
             );
           })}
