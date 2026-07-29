@@ -29,6 +29,28 @@ const defaultClock: Clock = {
 const iconPattern =
   /^[A-Za-z0-9][A-Za-z0-9._-]*\.(?:svg|png|webp|jpe?g|avif)$/i;
 
+function normalizeIcon(icon: string): string | null {
+  try {
+    const parsedUrl = new URL(icon);
+    if (parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:") {
+      return icon.length <= 2_048 ? parsedUrl.toString() : null;
+    }
+  } catch {
+    // Bundled icons are stored as basenames rather than URLs.
+  }
+
+  if (
+    iconPattern.test(icon) &&
+    !icon.includes("..") &&
+    !icon.includes("/") &&
+    !icon.includes("\\")
+  ) {
+    return icon;
+  }
+
+  return null;
+}
+
 function validateInput(
   input: unknown,
   categories?: CategoriesModule,
@@ -47,12 +69,8 @@ function validateInput(
   if (name.length < 1 || name.length > 100) {
     fields.name = "APP_NAME_INVALID";
   }
-  if (
-    !iconPattern.test(icon) ||
-    icon.includes("..") ||
-    icon.includes("/") ||
-    icon.includes("\\")
-  ) {
+  const normalizedIcon = normalizeIcon(icon);
+  if (normalizedIcon === null) {
     fields.icon = "APP_ICON_INVALID";
   }
 
@@ -96,7 +114,12 @@ function validateInput(
     throw validationError(fields);
   }
 
-  return { name, icon, url: normalizedUrl, categoryId };
+  return {
+    name,
+    icon: normalizedIcon ?? icon,
+    url: normalizedUrl,
+    categoryId,
+  };
 }
 
 function mapRow(row: AppRow): AppItem {

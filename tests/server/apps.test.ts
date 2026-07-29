@@ -81,7 +81,22 @@ describe("app catalog module", () => {
     );
   });
 
-  it("validates app names, safe icon basenames, and HTTP(S) URLs", () => {
+  it("stores bundled icon basenames and normalized remote icon URLs", () => {
+    const apps = createAppCatalogModule(database, { now: () => now });
+    const remoteIconUrl =
+      "https://cdn.example.com/icons/docs.svg?version=1";
+
+    const appItem = apps.create(1, {
+      name: "Remote icon",
+      icon: remoteIconUrl,
+      url: "https://example.com",
+    });
+
+    expect(appItem.icon).toBe(remoteIconUrl);
+    expect(apps.list(1)[0]?.icon).toBe(remoteIconUrl);
+  });
+
+  it("validates app names, icon basenames or URLs, and app URLs", () => {
     const apps = createAppCatalogModule(database, { now: () => now });
 
     expect(() =>
@@ -97,6 +112,21 @@ describe("app catalog module", () => {
           name: "APP_NAME_INVALID",
           icon: "APP_ICON_INVALID",
           url: "APP_URL_INVALID",
+        },
+      }),
+    );
+
+    expect(() =>
+      apps.create(1, {
+        name: "Unsafe icon URL",
+        icon: "data:image/svg+xml,<svg></svg>",
+        url: "https://example.com",
+      }),
+    ).toThrowError(
+      expect.objectContaining({
+        status: 400,
+        fields: {
+          icon: "APP_ICON_INVALID",
         },
       }),
     );

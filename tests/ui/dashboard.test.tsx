@@ -220,6 +220,61 @@ describe("dashboard UI", () => {
     });
   }, 10_000);
 
+  it("creates an app with a custom icon URL and falls back when it fails", async () => {
+    const user = userEvent.setup();
+    const customIconUrl = "https://cdn.example.com/icons/custom.svg";
+    const created: AppItem = {
+      ...firstApp,
+      id: 3,
+      name: "Custom",
+      icon: customIconUrl,
+      url: "https://custom.example.com/",
+    };
+    vi.mocked(api.createApp).mockResolvedValue(created);
+    renderWithProviders(<App />);
+
+    await user.click(screen.getAllByRole("button", { name: "Add app" })[0]);
+    const dialog = await screen.findByRole("dialog", { name: "Add an app" });
+    await user.type(within(dialog).getByLabelText("App name"), "Custom");
+    await user.click(
+      within(dialog).getByRole("button", { name: "Use custom icon URL" }),
+    );
+    await user.type(
+      within(dialog).getByLabelText("Custom icon URL"),
+      customIconUrl,
+    );
+    await user.type(
+      within(dialog).getByLabelText("Web address"),
+      "https://custom.example.com",
+    );
+    await user.click(within(dialog).getByRole("button", { name: "Add app" }));
+
+    expect(api.createApp).toHaveBeenCalledWith({
+      name: "Custom",
+      icon: customIconUrl,
+      url: "https://custom.example.com",
+    });
+    const link = await screen.findByRole("link", { name: "Open Custom" });
+    const image = await waitFor(() => {
+      const icon = link.querySelector("img");
+      expect(icon).toHaveAttribute("src", customIconUrl);
+      return icon;
+    });
+    expect(image).toHaveAttribute("referrerpolicy", "no-referrer");
+    fireEvent.error(image as HTMLImageElement);
+    expect(image).toHaveAttribute("src", getIconUrl(DEFAULT_ICON_NAME));
+
+    await user.click(screen.getByRole("button", { name: "Menu for Custom" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Edit" }));
+    const editDialog = await screen.findByRole("dialog", { name: "Edit app" });
+    expect(
+      within(editDialog).getByLabelText("Custom icon URL"),
+    ).toHaveValue(customIconUrl);
+    expect(
+      within(editDialog).getByRole("button", { name: "Use built-in icons" }),
+    ).toBeVisible();
+  });
+
   it("redirects protected pages and auto-enters the dashboard after registration", async () => {
     useAppStore.setState({
       authStatus: "anonymous",

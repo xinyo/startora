@@ -180,6 +180,21 @@ describe("Express HTTP adapter", () => {
         expect(body.app.name).toBe("Updated");
       });
 
+    const customIconUrl = "https://cdn.example.com/icons/updated.svg";
+    await request(app)
+      .put(`/api/apps/${appId}`)
+      .set("Origin", origin)
+      .set("Cookie", cookie)
+      .send({
+        name: "Custom icon",
+        icon: customIconUrl,
+        url: "https://updated.example.com",
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.app.icon).toBe(customIconUrl);
+      });
+
     await request(app)
       .post("/api/apps")
       .set("Origin", origin)

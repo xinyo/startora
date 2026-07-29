@@ -30,6 +30,19 @@ interface AppEditorDialogProps {
   onOpenChange(isOpen: boolean): void;
 }
 
+function isCustomIconUrl(icon: string | undefined): boolean {
+  if (!icon) {
+    return false;
+  }
+
+  try {
+    const parsedUrl = new URL(icon);
+    return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function errorMessage(
   error: unknown,
   field: "name" | "icon" | "url",
@@ -53,6 +66,8 @@ export function AppEditorDialog({
   const categoryIds = useAppStore((state) => state.categoryIds);
   const [name, setName] = useState("");
   const [icon, setIcon] = useState(DEFAULT_ICON_NAME);
+  const [customIconUrl, setCustomIconUrl] = useState("");
+  const [useCustomIcon, setUseCustomIcon] = useState(false);
   const [iconSearch, setIconSearch] = useState("");
   const [iconSearchEdited, setIconSearchEdited] = useState(false);
   const [url, setUrl] = useState("");
@@ -69,8 +84,13 @@ export function AppEditorDialog({
       return;
     }
     const appName = appItem?.name ?? "";
+    const hasCustomIcon = isCustomIconUrl(appItem?.icon);
     setName(appName);
-    setIcon(appItem?.icon ?? DEFAULT_ICON_NAME);
+    setIcon(
+      hasCustomIcon ? DEFAULT_ICON_NAME : (appItem?.icon ?? DEFAULT_ICON_NAME),
+    );
+    setCustomIconUrl(hasCustomIcon ? (appItem?.icon ?? "") : "");
+    setUseCustomIcon(hasCustomIcon);
     setIconSearch(appName);
     setIconSearchEdited(false);
     setUrl(appItem?.url ?? "");
@@ -83,7 +103,12 @@ export function AppEditorDialog({
     setSubmitting(true);
     setError(null);
     try {
-      const input = { name, icon, url, categoryId: categoryId ?? undefined };
+      const input = {
+        name,
+        icon: useCustomIcon ? customIconUrl : icon,
+        url,
+        categoryId: categoryId ?? undefined,
+      };
       if (appItem) {
         await updateApp(appItem.id, input);
       } else {
@@ -148,19 +173,55 @@ export function AppEditorDialog({
             </label>
 
             <div className="field">
-              <span>{t("appForm.icon")}</span>
-              <Suspense fallback={<IconSelectorFallback />}>
-                <IconSelector
-                  value={icon}
-                  searchValue={iconSearch}
-                  onChange={setIcon}
-                  onSearchChange={(nextSearch) => {
-                    setIconSearch(nextSearch);
-                    setIconSearchEdited(true);
+              <div className="icon-field-heading">
+                <span>{t("appForm.icon")}</span>
+                <Button
+                  type="button"
+                  color="secondary"
+                  onPress={() => {
+                    setUseCustomIcon((current) => !current);
+                    setError(null);
                   }}
-                  isInvalid={Boolean(errorMessage(error, "icon", t))}
-                />
-              </Suspense>
+                  aria-expanded={useCustomIcon}
+                  aria-controls="custom-icon-url-field"
+                >
+                  {t(
+                    useCustomIcon
+                      ? "appForm.useBuiltInIcon"
+                      : "appForm.useCustomIcon",
+                  )}
+                </Button>
+              </div>
+              {useCustomIcon ? (
+                <label
+                  className="icon-selector-search"
+                  id="custom-icon-url-field"
+                >
+                  <span>{t("appForm.customIconUrl")}</span>
+                  <input
+                    value={customIconUrl}
+                    onChange={(event) => setCustomIconUrl(event.target.value)}
+                    placeholder={t("appForm.customIconUrlPlaceholder")}
+                    type="url"
+                    required
+                    maxLength={2048}
+                    aria-invalid={Boolean(errorMessage(error, "icon", t))}
+                  />
+                </label>
+              ) : (
+                <Suspense fallback={<IconSelectorFallback />}>
+                  <IconSelector
+                    value={icon}
+                    searchValue={iconSearch}
+                    onChange={setIcon}
+                    onSearchChange={(nextSearch) => {
+                      setIconSearch(nextSearch);
+                      setIconSearchEdited(true);
+                    }}
+                    isInvalid={Boolean(errorMessage(error, "icon", t))}
+                  />
+                </Suspense>
+              )}
               {errorMessage(error, "icon", t) && (
                 <small className="field-error">
                   {errorMessage(error, "icon", t)}
