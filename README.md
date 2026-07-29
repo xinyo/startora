@@ -36,10 +36,32 @@ Useful commands:
 pnpm test
 pnpm lint
 pnpm build
+pnpm build:demo
 pnpm start
 ```
 
 `pnpm start` serves both the built client and API from Express.
+
+## Browser-only demo
+
+```powershell
+pnpm build:demo
+```
+
+The demo build writes static frontend assets to `dist/demo`. It does not
+include the Express service or SQLite database. Accounts, sessions, apps, and
+categories are stored in the browser under the versioned
+`startora.demo.database.v1` localStorage key.
+
+Each newly registered demo account is seeded from `src/demo.json`. Subsequent
+changes are retained in that browser profile. Demo credentials and data are
+local and inspectable by the visitor, can be removed through browser storage
+controls, and are not synchronized to another browser or device.
+
+Pushes to `main` deploy this build to a pre-created Cloudflare Pages Direct
+Upload project. Configure the GitHub Actions variable
+`CLOUDFLARE_PAGES_PROJECT` and the secrets `CLOUDFLARE_ACCOUNT_ID` and
+`CLOUDFLARE_API_TOKEN`; the token needs Cloudflare Pages edit access.
 
 ## Configuration
 
