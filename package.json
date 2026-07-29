@@ -14,6 +14,7 @@
     "prebuild": "node scripts/generate-icon-manifest.mjs",
     "predev": "node scripts/generate-icon-manifest.mjs",
     "build": "vite build && tsc -b --force",
+    "build:demo": "node scripts/generate-icon-manifest.mjs && tsc -b tsconfig.app.json --force && vite build --mode demo --outDir dist/demo",
     "lint": "oxlint",
     "preview": "vite preview",
     "start": "node dist/server/server/index.js",

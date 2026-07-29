@@ -111,7 +111,10 @@ describe("Zustand app store", () => {
     expect(useAppStore.getState()).toMatchObject({
       authStatus: "authenticated",
       user: { id: 3, username: "Linus" },
+      initialized: true,
     });
+    expect(api.listApps).toHaveBeenCalledTimes(2);
+    expect(api.listCategories).toHaveBeenCalledTimes(2);
   });
 
   it("applies create, update, and delete results without refetching", async () => {

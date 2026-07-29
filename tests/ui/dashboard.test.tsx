@@ -44,6 +44,11 @@ vi.mock("@/lib/api", () => {
       createApp: vi.fn(),
       updateApp: vi.fn(),
       deleteApp: vi.fn(),
+      listCategories: vi.fn(),
+      createCategory: vi.fn(),
+      updateCategory: vi.fn(),
+      deleteCategory: vi.fn(),
+      reorderCategories: vi.fn(),
     },
   };
 });
@@ -230,6 +235,8 @@ describe("dashboard UI", () => {
     });
     const user = userEvent.setup();
     vi.mocked(api.register).mockResolvedValue({ id: 3, username: "New.User" });
+    vi.mocked(api.listApps).mockResolvedValue([]);
+    vi.mocked(api.listCategories).mockResolvedValue([]);
 
     render(
       <I18nextProvider i18n={i18n}>

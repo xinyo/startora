@@ -1,0 +1,29 @@
+{
+  "categories": [
+    {
+      "name": "Work",
+      "apps": [
+        {
+          "name": "Proxmox",
+          "icon": "proxmox.png",
+          "url": "http://192.168.1.100/"
+        },
+        {
+          "name": "Postgres",
+          "icon": "postgresql.svg",
+          "url": "http://192.168.1.200/"
+        }
+      ]
+    },
+    {
+      "name": "Media",
+      "apps": [
+        {
+          "name": "Jellyfin",
+          "icon": "jellyfin.png",
+          "url": "http://192.168.1.30/"
+        }
+      ]
+    }
+  ]
+}

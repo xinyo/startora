@@ -161,8 +161,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
       categoriesById: {},
       categoryIds: [],
       errorCode: null,
-      initialized: true,
+      initialized: false,
     });
+    await Promise.all([get().loadApps(), get().loadCategories()]);
+    set({ initialized: true });
   },
 
   async logout() {
