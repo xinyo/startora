@@ -51,6 +51,11 @@ void i18n.use(initReactI18next).init({
           editApp: "Edit {{name}}",
           deleteApp: "Delete {{name}}",
           appCardMenu: "Menu for {{name}}",
+          enterEditMode: "Enter edit mode",
+          exitEditMode: "Finish editing",
+          dragApp: "Drag {{name}}",
+          reorderFailed:
+            "The new app order could not be saved. Your previous order was restored.",
           loadFailed: "Your apps could not be loaded. Refresh to try again.",
         },
         appForm: {

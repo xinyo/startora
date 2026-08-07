@@ -6,6 +6,7 @@ import { PASSWORD_LENGTH } from "@/shared/auth-policy";
 import type {
   AppItem,
   AppItemInput,
+  AppReorderInput,
   CategoryItem,
   CategoryItemInput,
   User,
@@ -99,6 +100,9 @@ function isDemoApp(value: unknown): value is DemoApp {
     typeof value.icon === "string" &&
     typeof value.url === "string" &&
     (value.categoryId === null || isPositiveInteger(value.categoryId)) &&
+    typeof value.sortId === "number" &&
+    Number.isSafeInteger(value.sortId) &&
+    value.sortId >= 0 &&
     typeof value.createdAt === "string" &&
     typeof value.updatedAt === "string"
   );
@@ -414,6 +418,31 @@ export function createDemoApi(
     return user;
   };
 
+  const getAppGroup = (
+    database: DemoDatabase,
+    userId: number,
+    categoryId: number | null,
+  ): DemoApp[] =>
+    Object.values(database.appsById)
+      .filter(
+        (app) => app.userId === userId && app.categoryId === categoryId,
+      )
+      .sort(
+        (first, second) => first.sortId - second.sortId || first.id - second.id,
+      );
+
+  const writeAppOrder = (
+    orderedApps: DemoApp[],
+    categoryId: number | null,
+    timestamp: string,
+  ): void => {
+    orderedApps.forEach((app, sortId) => {
+      app.categoryId = categoryId;
+      app.sortId = sortId;
+      app.updatedAt = timestamp;
+    });
+  };
+
   const seedAccount = (database: DemoDatabase, userId: number): void => {
     for (
       let categoryIndex = 0;
@@ -436,7 +465,12 @@ export function createDemoApi(
         updatedAt: timestamp,
       };
 
-      for (const seedApp of seedCategory.apps) {
+      for (
+        let appIndex = 0;
+        appIndex < seedCategory.apps.length;
+        appIndex++
+      ) {
+        const seedApp = seedCategory.apps[appIndex];
         const appInput = normalizeAppInput({
           ...seedApp,
           categoryId,
@@ -449,6 +483,7 @@ export function createDemoApi(
           icon: appInput.icon,
           url: appInput.url,
           categoryId,
+          sortId: appIndex,
           createdAt: timestamp,
           updatedAt: timestamp,
         };
@@ -572,6 +607,11 @@ export function createDemoApi(
       }
 
       const timestamp = now().toString();
+      const existing = getAppGroup(database, user.id, categoryId);
+      writeAppOrder(existing, categoryId, timestamp);
+      for (const app of existing) {
+        app.sortId += 1;
+      }
       const appId = database.nextAppId++;
       const app: DemoApp = {
         id: appId,
@@ -580,6 +620,7 @@ export function createDemoApi(
         icon: appInput.icon,
         url: appInput.url,
         categoryId,
+        sortId: 0,
         createdAt: timestamp,
         updatedAt: timestamp,
       };
@@ -613,6 +654,14 @@ export function createDemoApi(
         categoryId,
         updatedAt: now().toString(),
       };
+      if (existing.categoryId !== categoryId) {
+        const timestamp = app.updatedAt;
+        const source = getAppGroup(database, user.id, existing.categoryId)
+          .filter((candidate) => candidate.id !== id);
+        const target = getAppGroup(database, user.id, categoryId);
+        writeAppOrder(source, existing.categoryId, timestamp);
+        writeAppOrder([app, ...target], categoryId, timestamp);
+      }
       database.appsById[id] = app;
       writeDatabase(database);
       return publicApp(app);
@@ -626,7 +675,69 @@ export function createDemoApi(
         throw notFound();
       }
       delete database.appsById[id];
+      writeAppOrder(
+        getAppGroup(database, user.id, app.categoryId),
+        app.categoryId,
+        now().toString(),
+      );
       writeDatabase(database);
+    },
+
+    async reorderApp(input: AppReorderInput) {
+      const fields: Record<string, string> = {};
+      if (!Number.isSafeInteger(input.appId) || input.appId <= 0) {
+        fields.appId = "APP_ID_INVALID";
+      }
+      if (!Number.isSafeInteger(input.position) || input.position < 0) {
+        fields.position = "APP_POSITION_INVALID";
+      }
+      if (
+        input.categoryId !== null &&
+        (!Number.isSafeInteger(input.categoryId) || input.categoryId <= 0)
+      ) {
+        fields.categoryId = "APP_CATEGORY_INVALID";
+      }
+      if (Object.keys(fields).length > 0) {
+        throw validationFailed(fields);
+      }
+
+      const database = readDatabase();
+      const user = requireUser(database);
+      if (
+        input.categoryId !== null &&
+        database.categoriesById[input.categoryId]?.userId !== user.id
+      ) {
+        throw validationFailed({ categoryId: "CATEGORY_NOT_FOUND" });
+      }
+      const draggedApp = database.appsById[input.appId];
+      if (!draggedApp || draggedApp.userId !== user.id) {
+        throw notFound();
+      }
+
+      const sourceCategoryId = draggedApp.categoryId;
+      const source = getAppGroup(database, user.id, sourceCategoryId).filter(
+        (app) => app.id !== draggedApp.id,
+      );
+      const sameCategory = sourceCategoryId === input.categoryId;
+      const target = sameCategory
+        ? source
+        : getAppGroup(database, user.id, input.categoryId);
+      if (input.position > target.length) {
+        throw validationFailed({ position: "APP_POSITION_INVALID" });
+      }
+
+      const nextTarget = [...target];
+      nextTarget.splice(input.position, 0, draggedApp);
+      const timestamp = now().toString();
+      if (!sameCategory) {
+        writeAppOrder(source, sourceCategoryId, timestamp);
+      }
+      writeAppOrder(nextTarget, input.categoryId, timestamp);
+      writeDatabase(database);
+
+      return (sameCategory ? nextTarget : [...source, ...nextTarget]).map(
+        publicApp,
+      );
     },
 
     async listCategories() {

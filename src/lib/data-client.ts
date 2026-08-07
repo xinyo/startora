@@ -1,6 +1,7 @@
 import type {
   AppItem,
   AppItemInput,
+  AppReorderInput,
   CategoryItem,
   CategoryItemInput,
   User,
@@ -33,6 +34,7 @@ export interface DataClient {
   listApps(): Promise<AppItem[]>;
   createApp(input: AppItemInput): Promise<AppItem>;
   updateApp(id: number, input: AppItemInput): Promise<AppItem>;
+  reorderApp(input: AppReorderInput): Promise<AppItem[]>;
   deleteApp(id: number): Promise<void>;
   listCategories(): Promise<CategoryItem[]>;
   createCategory(input: CategoryItemInput): Promise<CategoryItem>;

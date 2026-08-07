@@ -495,6 +495,48 @@ button {
   box-shadow: 0 16px 36px rgb(24 24 27 / 9%);
 }
 
+.app-card--editable {
+  border-style: dashed;
+  border-color: #b9a7dd;
+  cursor: grab;
+  box-shadow: 0 12px 28px rgb(83 56 132 / 9%);
+}
+
+.app-card--editable .app-link {
+  cursor: inherit;
+}
+
+.app-card--dragging,
+.app-card--dragging .app-link {
+  cursor: grabbing;
+}
+
+.app-card--dragging {
+  opacity: 0.55;
+  transform: translateY(-2px) scale(0.99);
+}
+
+.app-card--drop-before::before,
+.app-card--drop-after::after {
+  position: absolute;
+  z-index: 3;
+  top: 0.35rem;
+  bottom: 0.35rem;
+  width: 4px;
+  border-radius: 999px;
+  background: var(--color-bg-brand-solid, #7f56d9);
+  box-shadow: 0 0 0 3px rgb(127 86 217 / 18%);
+  content: "";
+}
+
+.app-card--drop-before::before {
+  left: -0.65rem;
+}
+
+.app-card--drop-after::after {
+  right: -0.65rem;
+}
+
 .app-link {
   display: flex;
   min-width: 0;
@@ -549,6 +591,48 @@ button {
   top: var(--app-card-padding);
   right: var(--app-card-padding);
   z-index: 1;
+}
+
+.app-card-drag-handle {
+  position: absolute;
+  z-index: 2;
+  top: var(--app-card-padding);
+  right: var(--app-card-padding);
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 0.5rem;
+  color: var(--color-fg-quaternary, #71717a);
+  background: transparent;
+  cursor: grab;
+}
+
+.app-card-drag-handle:hover,
+.app-card-drag-handle:focus-visible {
+  color: var(--color-fg-brand-primary, #6941c6);
+  background: var(--color-bg-brand-primary, #f4ebff);
+}
+
+.app-card-drag-handle:focus-visible {
+  outline: 3px solid rgb(127 86 217 / 35%);
+  outline-offset: 2px;
+}
+
+.app-card-drag-handle:active {
+  cursor: grabbing;
+}
+
+.app-card-drag-handle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.app-card-drag-handle svg {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 
@@ -684,6 +768,23 @@ button {
   margin-bottom: 1.5rem;
 }
 
+.category-section--editable {
+  min-height: 6rem;
+  padding: 0.65rem;
+  border: 1px dashed transparent;
+  border-radius: 1rem;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.category-section--drop-target {
+  border-color: #9e77ed;
+  background: rgb(244 235 255 / 55%);
+  box-shadow: 0 0 0 3px rgb(127 86 217 / 10%);
+}
+
 .category-section-heading {
   margin: 0 0 0.75rem;
   font-size: 1.05rem;
@@ -697,6 +798,17 @@ button {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
   gap: 1rem;
+}
+
+.category-section--editable .category-section-grid:empty {
+  min-height: 4rem;
+  border: 1px dashed #d6c8ed;
+  border-radius: 0.8rem;
+}
+
+.category-section--drop-target .category-section-grid:empty {
+  border-color: #7f56d9;
+  background: rgb(255 255 255 / 65%);
 }
 
 /* ── Manage Categories Dialog ── */

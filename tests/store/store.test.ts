@@ -30,6 +30,7 @@ vi.mock("@/lib/api", () => {
       createApp: vi.fn(),
       updateApp: vi.fn(),
       deleteApp: vi.fn(),
+      reorderApp: vi.fn(),
       listCategories: vi.fn(),
       createCategory: vi.fn(),
       updateCategory: vi.fn(),
@@ -40,7 +41,7 @@ vi.mock("@/lib/api", () => {
 });
 
 import { api, ApiClientError } from "@/lib/api";
-import { useAppStore } from "@/store";
+import { reorderAppsById, useAppStore } from "@/store";
 import type { AppItem } from "@/types/contracts";
 
 const appItem: AppItem = {
@@ -49,6 +50,7 @@ const appItem: AppItem = {
   icon: "default-app.svg",
   url: "https://docs.example.com/",
   categoryId: null,
+  sortId: 0,
   createdAt: "2026-07-23T00:00:00Z",
   updatedAt: "2026-07-23T00:00:00Z",
 };
@@ -145,5 +147,66 @@ describe("Zustand app store", () => {
     await useAppStore.getState().deleteApp(7);
     expect(useAppStore.getState().appIds).toEqual([]);
     expect(useAppStore.getState().appsById[7]).toBeUndefined();
+  });
+
+  it("reindexes same-category and cross-category moves", () => {
+    const second = { ...appItem, id: 8, name: "Status", sortId: 1 };
+    const categorized = {
+      ...appItem,
+      id: 9,
+      name: "Design",
+      categoryId: 4,
+      sortId: 0,
+    };
+    const indexed = { 7: appItem, 8: second, 9: categorized };
+
+    const withinCategory = reorderAppsById(indexed, 7, null, 1);
+    expect(withinCategory[8].sortId).toBe(0);
+    expect(withinCategory[7].sortId).toBe(1);
+
+    const acrossCategories = reorderAppsById(withinCategory, 8, 4, 1);
+    expect(acrossCategories[7]).toMatchObject({ categoryId: null, sortId: 0 });
+    expect(acrossCategories[9]).toMatchObject({ categoryId: 4, sortId: 0 });
+    expect(acrossCategories[8]).toMatchObject({ categoryId: 4, sortId: 1 });
+  });
+
+  it("optimistically reorders apps and merges the server result", async () => {
+    const second = { ...appItem, id: 8, name: "Status", sortId: 1 };
+    useAppStore.setState({
+      appsById: { 7: appItem, 8: second },
+      appIds: [7, 8],
+    });
+    const serverResult = [
+      { ...second, sortId: 0 },
+      { ...appItem, sortId: 1 },
+    ];
+    vi.mocked(api.reorderApp).mockResolvedValue(serverResult);
+
+    const saving = useAppStore.getState().reorderApp(7, null, 1);
+    expect(useAppStore.getState().appsById[8].sortId).toBe(0);
+    expect(useAppStore.getState().appsById[7].sortId).toBe(1);
+    await saving;
+
+    expect(api.reorderApp).toHaveBeenCalledWith({
+      appId: 7,
+      categoryId: null,
+      position: 1,
+    });
+    expect(useAppStore.getState().appsById[7]).toEqual(serverResult[1]);
+  });
+
+  it("restores the previous order when persistence fails", async () => {
+    const second = { ...appItem, id: 8, name: "Status", sortId: 1 };
+    useAppStore.setState({
+      appsById: { 7: appItem, 8: second },
+      appIds: [7, 8],
+    });
+    vi.mocked(api.reorderApp).mockRejectedValue(new Error("offline"));
+
+    await expect(
+      useAppStore.getState().reorderApp(7, null, 1),
+    ).rejects.toThrow("offline");
+    expect(useAppStore.getState().appsById[7].sortId).toBe(0);
+    expect(useAppStore.getState().appsById[8].sortId).toBe(1);
   });
 });

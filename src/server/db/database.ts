@@ -58,6 +58,29 @@ const migrations = [
       CREATE INDEX apps_category_idx ON apps(user_id, category_id);
     `,
   },
+  {
+    version: 3,
+    sql: `
+      ALTER TABLE apps ADD COLUMN sort_id INTEGER NOT NULL DEFAULT 0 CHECK(sort_id >= 0);
+
+      WITH ranked AS (
+        SELECT
+          id,
+          ROW_NUMBER() OVER (
+            PARTITION BY user_id, category_id
+            ORDER BY created_at DESC, id DESC
+          ) - 1 AS next_sort_id
+        FROM apps
+      )
+      UPDATE apps
+      SET sort_id = (
+        SELECT next_sort_id FROM ranked WHERE ranked.id = apps.id
+      );
+
+      CREATE INDEX apps_user_category_sort_idx
+        ON apps(user_id, category_id, sort_id, id);
+    `,
+  },
 ] as const;
 
 export function openDatabase(databasePath: string): SqliteDatabase {

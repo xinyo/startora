@@ -193,6 +193,18 @@ export function createHttpApp(options: HttpAppOptions): Express {
     }
   });
 
+  app.put("/api/apps/reorder", requireSession, (request, response, next) => {
+    try {
+      const apps = options.apps.reorder(
+        sessionFrom(response).user.id,
+        request.body,
+      );
+      response.json({ apps });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.put<IdRouteParams>("/api/apps/:id", requireSession, (request, response, next) => {
     try {
       const appItem = options.apps.update(
