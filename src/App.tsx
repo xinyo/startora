@@ -10,7 +10,15 @@ import { ManageCategoriesDialog } from "@/components/dashboard/manage-categories
 import { useAppStore } from "@/store";
 import type { AppItem } from "@/types/contracts";
 import { cx } from "@/utils/cx";
-import { Check, DotsGrid, Edit01, Trash01 } from "@untitledui/icons";
+import {
+  Check,
+  DotsGrid,
+  Edit01,
+  Folder,
+  LogOut01,
+  Plus,
+  Trash01,
+} from "@untitledui/icons";
 import type { DragEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -565,27 +573,51 @@ function App() {
           <p className="dashboard-subtitle">{t("dashboard.subtitle")}</p>
         </div>
         <div className="dashboard-actions">
-          <Button color="secondary" onPress={() => void logout()}>
-            {t("dashboard.logout")}
+          <Button iconLeading={Plus} onPress={openCreateDialog}>
+            {t("dashboard.addApp")}
           </Button>
-          <Button color="secondary" onPress={() => setCategoriesOpen(true)}>
-            {t("categories.manage")}
-          </Button>
-          <Button
-            color={isEditMode ? "primary" : "secondary"}
-            iconLeading={isEditMode ? Check : Edit01}
-            aria-label={t(
-              isEditMode ? "dashboard.exitEditMode" : "dashboard.enterEditMode",
-            )}
-            aria-pressed={isEditMode}
-            isDisabled={isSavingOrder}
-            onPress={toggleEditMode}
-          >
-            {isEditMode
-              ? t("dashboard.exitEditMode")
-              : t("dashboard.enterEditMode")}
-          </Button>
-          <Button onPress={openCreateDialog}>{t("dashboard.addApp")}</Button>
+          <Dropdown.Root>
+            <Dropdown.DotsButton
+              className="dashboard-actions-menu-button"
+              aria-label={t("dashboard.actionsMenu")}
+            />
+            <Dropdown.Popover className="w-52">
+              <Dropdown.Menu
+                onAction={(key) => {
+                  if (key === "edit-mode") {
+                    toggleEditMode();
+                  } else if (key === "manage-categories") {
+                    setCategoriesOpen(true);
+                  } else if (key === "logout") {
+                    void logout();
+                  }
+                }}
+              >
+                <Dropdown.Item
+                  id="edit-mode"
+                  icon={isEditMode ? Check : Edit01}
+                  label={t(
+                    isEditMode
+                      ? "dashboard.exitEditMode"
+                      : "dashboard.enterEditMode",
+                  )}
+                  isDisabled={isSavingOrder}
+                />
+                <Dropdown.Item
+                  id="manage-categories"
+                  icon={Folder}
+                  label={t("categories.manage")}
+                />
+                <Dropdown.Separator />
+                <Dropdown.Item
+                  id="logout"
+                  icon={LogOut01}
+                  label={t("dashboard.logout")}
+                  className="dropdown-item-destructive"
+                />
+              </Dropdown.Menu>
+            </Dropdown.Popover>
+          </Dropdown.Root>
         </div>
       </header>
 
