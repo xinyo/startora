@@ -212,6 +212,68 @@ describe("Express HTTP adapter", () => {
       .expect(204);
   });
 
+  it("updates categories with PATCH and persists their order", async () => {
+    const registration = await request(app)
+      .post("/api/auth/register")
+      .set("Origin", origin)
+      .send({ username: "Category.User", password: "password-one" });
+    const cookie = registration.headers["set-cookie"][0] as string;
+
+    const first = await request(app)
+      .post("/api/categories")
+      .set("Origin", origin)
+      .set("Cookie", cookie)
+      .send({ name: "Work" })
+      .expect(201);
+    const second = await request(app)
+      .post("/api/categories")
+      .set("Origin", origin)
+      .set("Cookie", cookie)
+      .send({ name: "Media" })
+      .expect(201);
+    const firstId = first.body.category.id as number;
+    const secondId = second.body.category.id as number;
+
+    await request(app)
+      .patch(`/api/categories/${secondId}`)
+      .set("Origin", origin)
+      .set("Cookie", cookie)
+      .send({ name: "Entertainment" })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.category).toMatchObject({
+          id: secondId,
+          name: "Entertainment",
+          position: 1,
+        });
+      });
+
+    await request(app)
+      .put("/api/categories/order")
+      .set("Origin", origin)
+      .set("Cookie", cookie)
+      .send({ orderedIds: [secondId, firstId] })
+      .expect(204);
+
+    await request(app)
+      .get("/api/categories")
+      .set("Cookie", cookie)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(
+          body.categories.map(
+            (category: { id: number; position: number }) => [
+              category.id,
+              category.position,
+            ],
+          ),
+        ).toEqual([
+          [secondId, 0],
+          [firstId, 1],
+        ]);
+      });
+  });
+
   it("persists app reorder requests and returns the reindexed group", async () => {
     const registration = await request(app)
       .post("/api/auth/register")

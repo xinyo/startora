@@ -55,7 +55,7 @@ void i18n.use(initReactI18next).init({
           exitEditMode: "Finish editing",
           dragApp: "Drag {{name}}",
           reorderFailed:
-            "The new app order could not be saved. Your previous order was restored.",
+            "The new order could not be saved. Your previous order was restored.",
           loadFailed: "Your apps could not be loaded. Refresh to try again.",
         },
         appForm: {
@@ -110,6 +110,7 @@ void i18n.use(initReactI18next).init({
           deleteFailed: "The category could not be deleted. Please try again.",
           moveUp: "Move up",
           moveDown: "Move down",
+          dragCategory: "Drag {{name}} category",
           uncategorized: "Uncategorized",
           nameInvalid: "Enter a category name up to 100 characters.",
         },

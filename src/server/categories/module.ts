@@ -133,10 +133,11 @@ export function createCategoriesModule(
 
     update(userId, categoryId, input) {
       const cat = validateInput(input);
+      const existing = getOwnedCategory(userId, categoryId);
       const now = clock.now().toString();
       const result = updateCategory.run(
         cat.name,
-        cat.position ?? 0,
+        cat.position ?? existing.position,
         now,
         categoryId,
         userId,

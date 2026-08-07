@@ -40,6 +40,10 @@ type IdRouteParams = {
   id: string;
 };
 
+type CategoryRouteParams = {
+  categoryId: string;
+};
+
 function asyncHandler(handler: AsyncHandler): RequestHandler {
   return (request, response, next) => {
     void handler(request, response, next).catch(next);
@@ -248,37 +252,8 @@ export function createHttpApp(options: HttpAppOptions): Express {
     }
   });
 
-  app.put<IdRouteParams>("/api/categories/:id", requireSession, (request, response, next) => {
-    try {
-      const categoryItem = options.categories.update(
-        sessionFrom(response).user.id,
-        parseCategoryId(request.params.id),
-        request.body,
-      );
-      response.json({ category: categoryItem });
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  app.delete<IdRouteParams>(
-    "/api/categories/:id",
-    requireSession,
-    (request, response, next) => {
-      try {
-        options.categories.delete(
-          sessionFrom(response).user.id,
-          parseCategoryId(request.params.id),
-        );
-        response.status(204).send();
-      } catch (error) {
-        next(error);
-      }
-    },
-  );
-
   app.put(
-    "/api/categories/reorder",
+    "/api/categories/order",
     requireSession,
     (request, response, next) => {
       try {
@@ -293,6 +268,39 @@ export function createHttpApp(options: HttpAppOptions): Express {
         options.categories.reorder(
           sessionFrom(response).user.id,
           body.orderedIds,
+        );
+        response.status(204).send();
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  app.patch<CategoryRouteParams>(
+    "/api/categories/:categoryId",
+    requireSession,
+    (request, response, next) => {
+      try {
+        const categoryItem = options.categories.update(
+          sessionFrom(response).user.id,
+          parseCategoryId(request.params.categoryId),
+          request.body,
+        );
+        response.json({ category: categoryItem });
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  app.delete<CategoryRouteParams>(
+    "/api/categories/:categoryId",
+    requireSession,
+    (request, response, next) => {
+      try {
+        options.categories.delete(
+          sessionFrom(response).user.id,
+          parseCategoryId(request.params.categoryId),
         );
         response.status(204).send();
       } catch (error) {

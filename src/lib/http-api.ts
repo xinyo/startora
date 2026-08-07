@@ -121,7 +121,7 @@ export const httpApi: DataClient = {
   ): Promise<CategoryItem> {
     const response = await request<{ category: CategoryItem }>(
       `/api/categories/${id}`,
-      { method: "PUT", body: JSON.stringify(input) },
+      { method: "PATCH", body: JSON.stringify(input) },
     );
     return response.category;
   },
@@ -131,7 +131,7 @@ export const httpApi: DataClient = {
   },
 
   reorderCategories(orderedIds: number[]): Promise<void> {
-    return request("/api/categories/reorder", {
+    return request("/api/categories/order", {
       method: "PUT",
       body: JSON.stringify({ orderedIds }),
     });

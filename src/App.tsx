@@ -4,6 +4,7 @@ import { Button } from "@/components/base/buttons/button";
 import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { AppEditorDialog } from "@/components/dashboard/app-editor-dialog";
 import { CategorySection } from "@/components/dashboard/category-section";
+import type { CategoryDropPlacement } from "@/components/dashboard/category-section";
 import { DeleteAppDialog } from "@/components/dashboard/delete-app-dialog";
 import { ManageCategoriesDialog } from "@/components/dashboard/manage-categories-dialog";
 import { useAppStore } from "@/store";
@@ -14,9 +15,15 @@ import type { DragEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-interface DropTarget {
+interface AppDropTarget {
   categoryId: number | null;
   position: number;
+}
+
+interface CategoryOrderDropTarget {
+  categoryId: number;
+  position: number;
+  placement: CategoryDropPlacement;
 }
 
 function hostnameFrom(url: string): string {
@@ -47,6 +54,7 @@ function App() {
   const initialized = useAppStore((state) => state.initialized);
   const logout = useAppStore((state) => state.logout);
   const reorderApp = useAppStore((state) => state.reorderApp);
+  const reorderCategories = useAppStore((state) => state.reorderCategories);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingApp, setEditingApp] = useState<AppItem | null>(null);
   const [deletingApp, setDeletingApp] = useState<AppItem | null>(null);
@@ -54,7 +62,12 @@ function App() {
   const [iconUrls, setIconUrls] = useState<Record<string, string>>({});
   const [isEditMode, setIsEditMode] = useState(false);
   const [draggedAppId, setDraggedAppId] = useState<number | null>(null);
-  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
+  const [appDropTarget, setAppDropTarget] = useState<AppDropTarget | null>(null);
+  const [draggedCategoryId, setDraggedCategoryId] = useState<number | null>(
+    null,
+  );
+  const [categoryDropTarget, setCategoryDropTarget] =
+    useState<CategoryOrderDropTarget | null>(null);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [reorderFailed, setReorderFailed] = useState(false);
 
@@ -124,9 +137,19 @@ function App() {
     setEditorOpen(true);
   };
 
-  const clearDragState = () => {
+  const clearAppDragState = () => {
     setDraggedAppId(null);
-    setDropTarget(null);
+    setAppDropTarget(null);
+  };
+
+  const clearCategoryDragState = () => {
+    setDraggedCategoryId(null);
+    setCategoryDropTarget(null);
+  };
+
+  const clearDragState = () => {
+    clearAppDragState();
+    clearCategoryDragState();
   };
 
   const toggleEditMode = () => {
@@ -135,19 +158,23 @@ function App() {
     clearDragState();
   };
 
-  const handleDragStart = (event: DragEvent<HTMLElement>, appItem: AppItem) => {
+  const handleAppDragStart = (
+    event: DragEvent<HTMLElement>,
+    appItem: AppItem,
+  ) => {
     if (!isEditMode || isSavingOrder) {
       event.preventDefault();
       return;
     }
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", String(appItem.id));
+    clearCategoryDragState();
     setDraggedAppId(appItem.id);
-    setDropTarget(null);
+    setAppDropTarget(null);
     setReorderFailed(false);
   };
 
-  const handleCategoryDragOver = (
+  const handleAppDragOver = (
     event: DragEvent<HTMLElement>,
     categoryId: number | null,
     categoryApps: AppItem[],
@@ -180,10 +207,72 @@ function App() {
         position = targetIndex + (isBefore ? 0 : 1);
       }
     }
-    setDropTarget({ categoryId, position });
+    setAppDropTarget({ categoryId, position });
   };
 
-  const handleCategoryDragLeave = (event: DragEvent<HTMLElement>) => {
+  const handleCategoryOrderDragStart = (
+    event: DragEvent<HTMLElement>,
+    categoryId: number,
+  ) => {
+    if (!isEditMode || isSavingOrder) {
+      event.preventDefault();
+      return;
+    }
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", `category:${categoryId}`);
+    clearAppDragState();
+    setDraggedCategoryId(categoryId);
+    setCategoryDropTarget(null);
+    setReorderFailed(false);
+  };
+
+  const handleCategoryOrderDragOver = (
+    event: DragEvent<HTMLElement>,
+    categoryId: number | null,
+  ) => {
+    if (
+      draggedCategoryId === null ||
+      categoryId === null ||
+      categoryId === draggedCategoryId ||
+      isSavingOrder
+    ) {
+      setCategoryDropTarget(null);
+      return;
+    }
+
+    const availableCategoryIds = categoryIds.filter(
+      (id) => id !== draggedCategoryId,
+    );
+    const targetIndex = availableCategoryIds.indexOf(categoryId);
+    if (targetIndex < 0) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    const rect = event.currentTarget.getBoundingClientRect();
+    const placement: CategoryDropPlacement =
+      event.clientY < rect.top + rect.height / 2 ? "before" : "after";
+    setCategoryDropTarget({
+      categoryId,
+      position: targetIndex + (placement === "before" ? 0 : 1),
+      placement,
+    });
+  };
+
+  const handleSectionDragOver = (
+    event: DragEvent<HTMLElement>,
+    categoryId: number | null,
+    categoryApps: AppItem[],
+  ) => {
+    if (draggedCategoryId !== null) {
+      handleCategoryOrderDragOver(event, categoryId);
+      return;
+    }
+    handleAppDragOver(event, categoryId, categoryApps);
+  };
+
+  const handleSectionDragLeave = (event: DragEvent<HTMLElement>) => {
     const nextTarget = event.relatedTarget;
     if (
       nextTarget instanceof Node &&
@@ -191,28 +280,32 @@ function App() {
     ) {
       return;
     }
-    setDropTarget(null);
+    if (draggedCategoryId !== null) {
+      setCategoryDropTarget(null);
+    } else {
+      setAppDropTarget(null);
+    }
   };
 
-  const handleDrop = async (
+  const handleAppDrop = async (
     event: DragEvent<HTMLElement>,
     categoryId: number | null,
   ) => {
     event.preventDefault();
     const appId = draggedAppId;
-    const target = dropTarget;
+    const target = appDropTarget;
     if (
       appId === null ||
       !target ||
       target.categoryId !== categoryId ||
       isSavingOrder
     ) {
-      clearDragState();
+      clearAppDragState();
       return;
     }
 
     const draggedApp = appsById[appId];
-    clearDragState();
+    clearAppDragState();
     if (
       draggedApp &&
       draggedApp.categoryId === categoryId &&
@@ -230,6 +323,58 @@ function App() {
     } finally {
       setIsSavingOrder(false);
     }
+  };
+
+  const handleCategoryOrderDrop = async (
+    event: DragEvent<HTMLElement>,
+    categoryId: number | null,
+  ) => {
+    event.preventDefault();
+    const draggedId = draggedCategoryId;
+    const target = categoryDropTarget;
+    if (
+      draggedId === null ||
+      categoryId === null ||
+      !target ||
+      target.categoryId !== categoryId ||
+      isSavingOrder
+    ) {
+      clearCategoryDragState();
+      return;
+    }
+
+    const nextCategoryIds = categoryIds.filter((id) => id !== draggedId);
+    if (target.position > nextCategoryIds.length) {
+      clearCategoryDragState();
+      return;
+    }
+    nextCategoryIds.splice(target.position, 0, draggedId);
+    clearCategoryDragState();
+
+    if (nextCategoryIds.every((id, index) => categoryIds[index] === id)) {
+      return;
+    }
+
+    setIsSavingOrder(true);
+    setReorderFailed(false);
+    try {
+      await reorderCategories(nextCategoryIds);
+    } catch {
+      setReorderFailed(true);
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
+  const handleSectionDrop = (
+    event: DragEvent<HTMLElement>,
+    categoryId: number | null,
+  ) => {
+    if (draggedCategoryId !== null) {
+      void handleCategoryOrderDrop(event, categoryId);
+      return;
+    }
+    void handleAppDrop(event, categoryId);
   };
 
   const renderAppCard = (
@@ -257,10 +402,10 @@ function App() {
         }
         onDragStart={(event) => {
           if (isEditMode) {
-            handleDragStart(event, appItem);
+            handleAppDragStart(event, appItem);
           }
         }}
-        onDragEnd={clearDragState}
+        onDragEnd={clearAppDragState}
       >
         {!isEditMode && (
           <Dropdown.Root>
@@ -343,8 +488,14 @@ function App() {
     categoryApps: AppItem[],
     name?: string,
   ) => {
-    const isActiveTarget = dropTarget?.categoryId === categoryId;
-    const dropPosition = isActiveTarget ? (dropTarget?.position ?? null) : null;
+    const isActiveTarget = appDropTarget?.categoryId === categoryId;
+    const dropPosition = isActiveTarget
+      ? (appDropTarget?.position ?? null)
+      : null;
+    const categoryDropPlacement =
+      categoryId !== null && categoryDropTarget?.categoryId === categoryId
+        ? categoryDropTarget.placement
+        : null;
     const availableApps = categoryApps.filter(
       (appItem) => appItem.id !== draggedAppId,
     );
@@ -369,11 +520,29 @@ function App() {
         }
         isEditMode={isEditMode}
         isDropTarget={isActiveTarget}
-        onDragOver={(event) =>
-          handleCategoryDragOver(event, categoryId, categoryApps)
+        isCategoryDraggable={
+          categoryId !== null && isEditMode && !isSavingOrder
         }
-        onDragLeave={handleCategoryDragLeave}
-        onDrop={(event) => void handleDrop(event, categoryId)}
+        isCategoryDragging={
+          categoryId !== null && draggedCategoryId === categoryId
+        }
+        categoryDragLabel={
+          categoryId !== null && name
+            ? t("categories.dragCategory", { name })
+            : undefined
+        }
+        categoryDropPlacement={categoryDropPlacement}
+        onCategoryDragStart={(event) => {
+          if (categoryId !== null) {
+            handleCategoryOrderDragStart(event, categoryId);
+          }
+        }}
+        onCategoryDragEnd={clearCategoryDragState}
+        onDragOver={(event) =>
+          handleSectionDragOver(event, categoryId, categoryApps)
+        }
+        onDragLeave={handleSectionDragLeave}
+        onDrop={(event) => handleSectionDrop(event, categoryId)}
       >
         {categoryApps.map((appItem) =>
           renderAppCard(
@@ -432,7 +601,7 @@ function App() {
         </p>
       )}
 
-      {initialized && apps.length === 0 ? (
+      {initialized && apps.length === 0 && !isEditMode ? (
         <section className="empty-state">
           <Button
             className="empty-icon u-press"

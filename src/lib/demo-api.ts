@@ -792,7 +792,7 @@ export function createDemoApi(
       const category: DemoCategory = {
         ...existing,
         name: categoryInput.name,
-        position: categoryInput.position ?? 0,
+        position: categoryInput.position ?? existing.position,
         updatedAt: now().toString(),
       };
       database.categoriesById[id] = category;

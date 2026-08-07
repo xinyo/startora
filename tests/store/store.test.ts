@@ -42,7 +42,7 @@ vi.mock("@/lib/api", () => {
 
 import { api, ApiClientError } from "@/lib/api";
 import { reorderAppsById, useAppStore } from "@/store";
-import type { AppItem } from "@/types/contracts";
+import type { AppItem, CategoryItem } from "@/types/contracts";
 
 const appItem: AppItem = {
   id: 7,
@@ -55,12 +55,29 @@ const appItem: AppItem = {
   updatedAt: "2026-07-23T00:00:00Z",
 };
 
+const firstCategory: CategoryItem = {
+  id: 4,
+  name: "Work",
+  position: 0,
+  createdAt: "2026-07-23T00:00:00Z",
+  updatedAt: "2026-07-23T00:00:00Z",
+};
+
+const secondCategory: CategoryItem = {
+  ...firstCategory,
+  id: 5,
+  name: "Media",
+  position: 1,
+};
+
 function resetStore(): void {
   useAppStore.setState({
     authStatus: "idle",
     user: null,
     appsById: {},
     appIds: [],
+    categoriesById: {},
+    categoryIds: [],
     errorCode: null,
   });
 }
@@ -208,5 +225,37 @@ describe("Zustand app store", () => {
     ).rejects.toThrow("offline");
     expect(useAppStore.getState().appsById[7].sortId).toBe(0);
     expect(useAppStore.getState().appsById[8].sortId).toBe(1);
+  });
+
+  it("optimistically reorders categories and updates their positions", async () => {
+    useAppStore.setState({
+      categoriesById: { 4: firstCategory, 5: secondCategory },
+      categoryIds: [4, 5],
+    });
+    vi.mocked(api.reorderCategories).mockResolvedValue();
+
+    const saving = useAppStore.getState().reorderCategories([5, 4]);
+
+    expect(useAppStore.getState().categoryIds).toEqual([5, 4]);
+    expect(useAppStore.getState().categoriesById[5].position).toBe(0);
+    expect(useAppStore.getState().categoriesById[4].position).toBe(1);
+    await saving;
+    expect(api.reorderCategories).toHaveBeenCalledWith([5, 4]);
+  });
+
+  it("restores category order and positions when persistence fails", async () => {
+    useAppStore.setState({
+      categoriesById: { 4: firstCategory, 5: secondCategory },
+      categoryIds: [4, 5],
+    });
+    vi.mocked(api.reorderCategories).mockRejectedValue(new Error("offline"));
+
+    await expect(
+      useAppStore.getState().reorderCategories([5, 4]),
+    ).rejects.toThrow("offline");
+
+    expect(useAppStore.getState().categoryIds).toEqual([4, 5]);
+    expect(useAppStore.getState().categoriesById[4].position).toBe(0);
+    expect(useAppStore.getState().categoriesById[5].position).toBe(1);
   });
 });

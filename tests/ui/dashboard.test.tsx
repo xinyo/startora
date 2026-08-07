@@ -78,7 +78,7 @@ import { api } from "@/lib/api";
 import { AppRouter } from "@/router";
 import { PASSWORD_LENGTH } from "@/shared/auth-policy";
 import { useAppStore } from "@/store";
-import type { AppItem } from "@/types/contracts";
+import type { AppItem, CategoryItem } from "@/types/contracts";
 
 const firstApp: AppItem = {
   id: 1,
@@ -91,6 +91,30 @@ const firstApp: AppItem = {
   updatedAt: "2026-07-23T00:00:00Z",
 };
 
+const dashboardCategories: CategoryItem[] = [
+  {
+    id: 4,
+    name: "Work",
+    position: 0,
+    createdAt: "2026-07-23T00:00:00Z",
+    updatedAt: "2026-07-23T00:00:00Z",
+  },
+  {
+    id: 5,
+    name: "Media",
+    position: 1,
+    createdAt: "2026-07-23T00:00:00Z",
+    updatedAt: "2026-07-23T00:00:00Z",
+  },
+  {
+    id: 6,
+    name: "Archive",
+    position: 2,
+    createdAt: "2026-07-23T00:00:00Z",
+    updatedAt: "2026-07-23T00:00:00Z",
+  },
+];
+
 function renderWithProviders(ui: ReactNode) {
   return render(
     <I18nextProvider i18n={i18n}>
@@ -99,14 +123,19 @@ function renderWithProviders(ui: ReactNode) {
   );
 }
 
-function setAuthenticated(apps: AppItem[] = []): void {
+function setAuthenticated(
+  apps: AppItem[] = [],
+  categories: CategoryItem[] = [],
+): void {
   useAppStore.setState({
     authStatus: "authenticated",
     user: { id: 1, username: "Ada" },
     appsById: Object.fromEntries(apps.map((appItem) => [appItem.id, appItem])),
     appIds: apps.map((appItem) => appItem.id),
-    categoriesById: {},
-    categoryIds: [],
+    categoriesById: Object.fromEntries(
+      categories.map((category) => [category.id, category]),
+    ),
+    categoryIds: categories.map((category) => category.id),
     errorCode: null,
     initialized: true,
   });
@@ -280,6 +309,135 @@ describe("dashboard UI", () => {
     expect(
       screen.getByRole("button", { name: "Finish editing" }),
     ).toBeVisible();
+  });
+
+  it("reorders categories from their title handles and keeps Uncategorized first", async () => {
+    setAuthenticated([firstApp], dashboardCategories);
+    vi.mocked(api.reorderCategories).mockResolvedValue();
+    const user = userEvent.setup();
+    renderWithProviders(<App />);
+
+    const workHeading = screen.getByRole("heading", { name: "Work" });
+    expect(workHeading).toHaveAttribute("draggable", "false");
+    expect(
+      workHeading.querySelector(".category-section-heading-icon"),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Enter edit mode" }));
+
+    const uncategorizedSection = screen.getByLabelText("Uncategorized");
+    expect(
+      uncategorizedSection.querySelector("[data-category-drag-handle]"),
+    ).not.toBeInTheDocument();
+
+    const draggableWorkHeading = screen.getByRole("heading", { name: "Work" });
+    const workSection = draggableWorkHeading.closest("section") as HTMLElement;
+    expect(draggableWorkHeading).toHaveAttribute("draggable", "true");
+    expect(draggableWorkHeading).toHaveAccessibleDescription(
+      "Drag Work category",
+    );
+    expect(
+      draggableWorkHeading.querySelector(".category-section-heading-icon"),
+    ).toBeInTheDocument();
+    expect(workSection).not.toHaveAttribute("draggable");
+
+    const mediaHeading = screen.getByRole("heading", { name: "Media" });
+    const mediaSection = mediaHeading.closest("section") as HTMLElement;
+    vi.spyOn(mediaSection, "getBoundingClientRect").mockReturnValue({
+      left: 0,
+      right: 500,
+      top: 0,
+      bottom: 100,
+      width: 500,
+      height: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    const dataTransfer = {
+      effectAllowed: "none",
+      dropEffect: "none",
+      setData: vi.fn(),
+      getData: vi.fn(),
+    } as unknown as DataTransfer;
+
+    fireEvent.dragStart(draggableWorkHeading, { dataTransfer });
+    fireEvent.dragOver(mediaSection, { dataTransfer, clientY: 80 });
+    expect(mediaSection).toHaveClass("category-section--category-drop-after");
+    fireEvent.drop(mediaSection, { dataTransfer });
+
+    await waitFor(() => {
+      expect(api.reorderCategories).toHaveBeenCalledWith([5, 4, 6]);
+    });
+    expect(useAppStore.getState().categoriesById[5].position).toBe(0);
+    expect(useAppStore.getState().categoriesById[4].position).toBe(1);
+    expect(useAppStore.getState().categoriesById[6].position).toBe(2);
+    expect(
+      [...document.querySelectorAll("main > section[data-category-id]")].map(
+        (section) => section.getAttribute("data-category-id"),
+      ),
+    ).toEqual(["uncategorized", "5", "4", "6"]);
+  });
+
+  it("restores category order and positions when a dropped order cannot save", async () => {
+    setAuthenticated([firstApp], dashboardCategories.slice(0, 2));
+    vi.mocked(api.reorderCategories).mockRejectedValue(new Error("offline"));
+    const user = userEvent.setup();
+    renderWithProviders(<App />);
+    await user.click(screen.getByRole("button", { name: "Enter edit mode" }));
+
+    const mediaHeading = screen.getByRole("heading", { name: "Media" });
+    const categoryRect = {
+      left: 0,
+      right: 500,
+      top: 0,
+      bottom: 100,
+      width: 500,
+      height: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    };
+    const dataTransfer = {
+      effectAllowed: "none",
+      dropEffect: "none",
+      setData: vi.fn(),
+      getData: vi.fn(),
+    } as unknown as DataTransfer;
+
+    fireEvent.dragStart(mediaHeading, { dataTransfer });
+    const activeWorkSection = screen
+      .getByRole("heading", { name: "Work" })
+      .closest("section") as HTMLElement;
+    vi.spyOn(activeWorkSection, "getBoundingClientRect").mockReturnValue(
+      categoryRect,
+    );
+    const dragOverEvent = new Event("dragover", {
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.defineProperties(dragOverEvent, {
+      clientY: { value: 20 },
+      dataTransfer: { value: dataTransfer },
+    });
+    fireEvent(activeWorkSection, dragOverEvent);
+    expect(activeWorkSection).toHaveClass(
+      "category-section--category-drop-before",
+    );
+    fireEvent.drop(activeWorkSection, { dataTransfer });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Your previous order was restored",
+    );
+    expect(api.reorderCategories).toHaveBeenCalledWith([5, 4]);
+    expect(useAppStore.getState().categoryIds).toEqual([4, 5]);
+    expect(useAppStore.getState().categoriesById[4].position).toBe(0);
+    expect(useAppStore.getState().categoriesById[5].position).toBe(1);
+    expect(
+      [...document.querySelectorAll("main > section[data-category-id]")].map(
+        (section) => section.getAttribute("data-category-id"),
+      ),
+    ).toEqual(["uncategorized", "4", "5"]);
   });
 
   it("creates, edits, and deletes an app through accessible dialogs", async () => {

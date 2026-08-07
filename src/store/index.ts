@@ -404,11 +404,42 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   async reorderCategories(orderedIds) {
-    // Optimistic update
+    const previousCategoryIds = get().categoryIds;
+    const previousPositions = new Map(
+      previousCategoryIds.map((id) => [id, get().categoriesById[id]?.position]),
+    );
+
     set((state) => {
       const categoryIds = orderedIds.filter((id) => state.categoriesById[id]);
-      return { categoryIds };
+      const categoriesById = { ...state.categoriesById };
+      categoryIds.forEach((id, position) => {
+        const category = categoriesById[id];
+        if (category) {
+          categoriesById[id] = { ...category, position };
+        }
+      });
+      return { categoryIds, categoriesById };
     });
-    await api.reorderCategories(orderedIds);
+
+    try {
+      await api.reorderCategories(orderedIds);
+    } catch (error) {
+      set((state) => {
+        const categoriesById = { ...state.categoriesById };
+        for (const [id, position] of previousPositions) {
+          const category = categoriesById[id];
+          if (category && position !== undefined) {
+            categoriesById[id] = { ...category, position };
+          }
+        }
+        return {
+          categoryIds: previousCategoryIds.filter(
+            (id) => categoriesById[id] !== undefined,
+          ),
+          categoriesById,
+        };
+      });
+      throw error;
+    }
   },
 }));
