@@ -4,6 +4,7 @@ import type {
   ApiErrorBody,
   AppItem,
   AppItemInput,
+  AppReorderInput,
   CategoryItem,
   CategoryItemInput,
   User,
@@ -85,6 +86,14 @@ export const httpApi: DataClient = {
       body: JSON.stringify(input),
     });
     return response.app;
+  },
+
+  async reorderApp(input: AppReorderInput): Promise<AppItem[]> {
+    const response = await request<{ apps: AppItem[] }>("/api/apps/reorder", {
+      method: "PUT",
+      body: JSON.stringify(input),
+    });
+    return response.apps;
   },
 
   deleteApp(id: number): Promise<void> {

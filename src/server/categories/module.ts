@@ -91,6 +91,16 @@ export function createCategoriesModule(
   const deleteCategory = database.prepare(
     "DELETE FROM categories WHERE id = ? AND user_id = ?",
   );
+  const listCategoryApps = database.prepare(`
+    SELECT id FROM apps
+    WHERE user_id = ? AND category_id IS ?
+    ORDER BY sort_id, id
+  `);
+  const updateAppPosition = database.prepare(`
+    UPDATE apps
+    SET category_id = ?, sort_id = ?, updated_at = ?
+    WHERE id = ? AND user_id = ?
+  `);
   const updatePosition = database.prepare(`
     UPDATE categories SET position = ?, updated_at = ? WHERE id = ? AND user_id = ?
   `);
@@ -138,10 +148,34 @@ export function createCategoriesModule(
     },
 
     delete(userId, categoryId) {
-      const result = deleteCategory.run(categoryId, userId);
-      if (result.changes === 0) {
+      if (!lookupCategory.get(categoryId, userId)) {
         throw notFoundError();
       }
+
+      database.transaction(() => {
+        const now = clock.now().toString();
+        const movedApps = listCategoryApps.all(userId, categoryId) as Array<{
+          id: number;
+        }>;
+        const uncategorized = listCategoryApps.all(userId, null) as Array<{
+          id: number;
+        }>;
+
+        for (let index = uncategorized.length - 1; index >= 0; index--) {
+          updateAppPosition.run(
+            null,
+            movedApps.length + index,
+            now,
+            uncategorized[index].id,
+            userId,
+          );
+        }
+        for (let index = 0; index < movedApps.length; index++) {
+          updateAppPosition.run(null, index, now, movedApps[index].id, userId);
+        }
+
+        deleteCategory.run(categoryId, userId);
+      })();
     },
 
     reorder(userId, orderedIds) {

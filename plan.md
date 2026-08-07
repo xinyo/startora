@@ -3,7 +3,7 @@ Summary
 Build a single-origin React/Vite + Express application backed by SQLite.
 Organize the backend around two deep modules—authentication and app catalog—with thin HTTP adapters. This keeps session, validation, ownership, and persistence rules localized instead of spreading them across route handlers.
 Use opaque cookie sessions rather than JWTs: this first-party dashboard benefits from simpler revocation and avoids exposing credentials to Zustand or browser storage. JWT access/refresh tokens would make more sense later for independent mobile or third-party clients.
-Standardize on Node 24 LTS because the installed Node 21 runtime is EOL and better-sqlite3 supports maintained Node versions with LTS prebuilt binaries. Node releases, better-sqlite3 guidance.
+Standardize on Node 22.13 because the installed Node 22 runtime is EOL and better-sqlite3 supports maintained Node versions with LTS prebuilt binaries. Node releases, better-sqlite3 guidance.
 Interfaces and Data
 Expose these same-origin JSON routes:POST /api/auth/register — username/password, creates the account and session.
 POST /api/auth/login — establishes a session.
@@ -26,7 +26,7 @@ Uses injected Temporal clock and random-token adapters for deterministic tests.
 Performs same-origin checks on mutations, returns generic invalid-credential errors, cleans expired sessions opportunistically, and never logs credentials or tokens.
 
 Add an app-catalog module using prepared SQL. Derive ownership from the session rather than accepting user IDs; cross-user update/delete attempts return 404. List apps newest-first.
-Serve the built Vite client from Express in production and use a Vite /api proxy during development. Add Node 24 engine/runtime declarations, backend/client build configurations, start/dev scripts, and environment documentation.
+Serve the built Vite client from Express in production and use a Vite /api proxy during development. Add Node 22.13 engine/runtime declarations, backend/client build configurations, start/dev scripts, and environment documentation.
 Create views/welcome.tsx with translated, accessible login/register forms. Registration automatically logs the user in.
 Wire React Router with /welcome, protected /, authenticated/anonymous redirects, initialization loading state, and a context-appropriate catch-all redirect.
 Implement store/index.ts with authStatus, user, appsById, ordered app IDs, and initialization/login/register/logout/load/create/update/delete actions. The store calls /api/auth/session on startup and never stores the session token.

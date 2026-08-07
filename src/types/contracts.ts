@@ -9,6 +9,7 @@ export interface AppItem {
   icon: string;
   url: string;
   categoryId: number | null;
+  sortId: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -18,6 +19,12 @@ export interface AppItemInput {
   icon: string;
   url: string;
   categoryId?: number | null;
+}
+
+export interface AppReorderInput {
+  appId: number;
+  categoryId: number | null;
+  position: number;
 }
 
 export interface CategoryItem {

@@ -32,10 +32,82 @@ interface AppStore {
   createApp(input: AppItemInput): Promise<AppItem>;
   updateApp(id: number, input: AppItemInput): Promise<AppItem>;
   deleteApp(id: number): Promise<void>;
+  reorderApp(
+    id: number,
+    categoryId: number | null,
+    position: number,
+  ): Promise<void>;
   createCategory(input: CategoryItemInput): Promise<CategoryItem>;
   updateCategory(id: number, input: CategoryItemInput): Promise<CategoryItem>;
   deleteCategory(id: number): Promise<void>;
   reorderCategories(orderedIds: number[]): Promise<void>;
+}
+
+function categoryApps(
+  appsById: Record<number, AppItem>,
+  categoryId: number | null,
+  excludedId?: number,
+): AppItem[] {
+  return Object.values(appsById)
+    .filter(
+      (appItem) =>
+        appItem.categoryId === categoryId && appItem.id !== excludedId,
+    )
+    .sort((left, right) => left.sortId - right.sortId || left.id - right.id);
+}
+
+function writeCategoryOrder(
+  appsById: Record<number, AppItem>,
+  orderedApps: AppItem[],
+  categoryId: number | null,
+): void {
+  orderedApps.forEach((appItem, sortId) => {
+    appsById[appItem.id] = { ...appItem, categoryId, sortId };
+  });
+}
+
+export function reorderAppsById(
+  appsById: Record<number, AppItem>,
+  appId: number,
+  categoryId: number | null,
+  position: number,
+): Record<number, AppItem> {
+  const draggedApp = appsById[appId];
+  if (!draggedApp) {
+    throw new Error("Cannot reorder an app that is not in the store.");
+  }
+
+  const sourceCategoryId = draggedApp.categoryId;
+  const source = categoryApps(appsById, sourceCategoryId, appId);
+  const sameCategory = sourceCategoryId === categoryId;
+  const target = sameCategory
+    ? source
+    : categoryApps(appsById, categoryId, appId);
+  if (!Number.isSafeInteger(position) || position < 0 || position > target.length) {
+    throw new RangeError("The app reorder position is outside the target category.");
+  }
+
+  const nextTarget = [...target];
+  nextTarget.splice(position, 0, draggedApp);
+  const next = { ...appsById };
+  if (!sameCategory) {
+    writeCategoryOrder(next, source, sourceCategoryId);
+  }
+  writeCategoryOrder(next, nextTarget, categoryId);
+  return next;
+}
+
+function withoutApp(
+  appsById: Record<number, AppItem>,
+  appId: number,
+): Record<number, AppItem> {
+  const removed = appsById[appId];
+  const next = { ...appsById };
+  delete next[appId];
+  if (removed) {
+    writeCategoryOrder(next, categoryApps(next, removed.categoryId), removed.categoryId);
+  }
+  return next;
 }
 
 function indexApps(apps: AppItem[]): {
@@ -207,31 +279,88 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   async createApp(input) {
     const appItem = await api.createApp(input);
-    set((state) => ({
-      appsById: { ...state.appsById, [appItem.id]: appItem },
-      appIds: [appItem.id, ...state.appIds],
-    }));
+    set((state) => {
+      const withCreated = { ...state.appsById, [appItem.id]: appItem };
+      return {
+        appsById: reorderAppsById(
+          withCreated,
+          appItem.id,
+          appItem.categoryId,
+          0,
+        ),
+        appIds: [appItem.id, ...state.appIds],
+      };
+    });
     return appItem;
   },
 
   async updateApp(id, input) {
     const appItem = await api.updateApp(id, input);
-    set((state) => ({
-      appsById: { ...state.appsById, [id]: appItem },
-    }));
+    set((state) => {
+      const current = state.appsById[id];
+      if (!current || current.categoryId === appItem.categoryId) {
+        return { appsById: { ...state.appsById, [id]: appItem } };
+      }
+      const reordered = reorderAppsById(
+        state.appsById,
+        id,
+        appItem.categoryId,
+        0,
+      );
+      reordered[id] = appItem;
+      return { appsById: reordered };
+    });
     return appItem;
   },
 
   async deleteApp(id) {
     await api.deleteApp(id);
     set((state) => {
-      const appsById = { ...state.appsById };
-      delete appsById[id];
       return {
-        appsById,
+        appsById: withoutApp(state.appsById, id),
         appIds: state.appIds.filter((appId) => appId !== id),
       };
     });
+  },
+
+  async reorderApp(id, categoryId, position) {
+    const previousAppsById = get().appsById;
+    const optimisticAppsById = reorderAppsById(
+      previousAppsById,
+      id,
+      categoryId,
+      position,
+    );
+    const affectedIds = Object.keys(optimisticAppsById)
+      .map(Number)
+      .filter(
+        (appId) => optimisticAppsById[appId] !== previousAppsById[appId],
+      );
+    set({ appsById: optimisticAppsById });
+
+    try {
+      const reorderedApps = await api.reorderApp({
+        appId: id,
+        categoryId,
+        position,
+      });
+      set((state) => {
+        const appsById = { ...state.appsById };
+        for (const appItem of reorderedApps) {
+          appsById[appItem.id] = appItem;
+        }
+        return { appsById };
+      });
+    } catch (error) {
+      set((state) => {
+        const appsById = { ...state.appsById };
+        for (const appId of affectedIds) {
+          appsById[appId] = previousAppsById[appId];
+        }
+        return { appsById };
+      });
+      throw error;
+    }
   },
 
   async createCategory(input) {
@@ -262,14 +391,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set((state) => {
       const categoriesById = { ...state.categoriesById };
       delete categoriesById[id];
-      // Clear categoryId from apps that belonged to the deleted category
       const appsById = { ...state.appsById };
-      for (const appId of Object.keys(appsById)) {
-        const app = appsById[Number(appId)];
-        if (app.categoryId === id) {
-          appsById[Number(appId)] = { ...app, categoryId: null };
-        }
-      }
+      const movedApps = categoryApps(appsById, id);
+      const uncategorized = categoryApps(appsById, null);
+      writeCategoryOrder(appsById, [...movedApps, ...uncategorized], null);
       return {
         categoriesById,
         categoryIds: state.categoryIds.filter((catId) => catId !== id),

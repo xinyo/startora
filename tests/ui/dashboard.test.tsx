@@ -9,8 +9,8 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { I18nextProvider } from "react-i18next";
 import type { ReactNode } from "react";
+import { I18nextProvider } from "react-i18next";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -44,6 +44,7 @@ vi.mock("@/lib/api", () => {
       createApp: vi.fn(),
       updateApp: vi.fn(),
       deleteApp: vi.fn(),
+      reorderApp: vi.fn(),
       listCategories: vi.fn(),
       createCategory: vi.fn(),
       updateCategory: vi.fn(),
@@ -84,6 +85,8 @@ const firstApp: AppItem = {
   name: "Missing icon app",
   icon: "missing.svg",
   url: "https://example.com/path",
+  categoryId: null,
+  sortId: 0,
   createdAt: "2026-07-23T00:00:00Z",
   updatedAt: "2026-07-23T00:00:00Z",
 };
@@ -102,7 +105,10 @@ function setAuthenticated(apps: AppItem[] = []): void {
     user: { id: 1, username: "Ada" },
     appsById: Object.fromEntries(apps.map((appItem) => [appItem.id, appItem])),
     appIds: apps.map((appItem) => appItem.id),
+    categoriesById: {},
+    categoryIds: [],
     errorCode: null,
+    initialized: true,
   });
 }
 
@@ -131,6 +137,149 @@ describe("dashboard UI", () => {
         getIconUrl(DEFAULT_ICON_NAME),
       );
     });
+  });
+
+  it("toggles edit mode and reorders draggable cards", async () => {
+    const secondApp: AppItem = {
+      ...firstApp,
+      id: 2,
+      name: "Second app",
+      url: "https://second.example.com/",
+      sortId: 1,
+    };
+    setAuthenticated([firstApp, secondApp]);
+    vi.mocked(api.reorderApp).mockResolvedValue([
+      { ...secondApp, sortId: 0 },
+      { ...firstApp, sortId: 1 },
+    ]);
+    const user = userEvent.setup();
+    renderWithProviders(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Enter edit mode" }));
+
+    expect(
+      screen.getByRole("button", { name: "Finish editing" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.queryByRole("button", { name: "Menu for Missing icon app" }),
+    ).not.toBeInTheDocument();
+    const firstCard = screen.getByRole("article", {
+      name: "Drag Missing icon app",
+    });
+    expect(firstCard).toHaveAttribute("draggable", "true");
+    expect(
+      firstCard.querySelector(".app-card-drag-handle"),
+    ).not.toHaveAttribute("draggable");
+    const firstLink = screen.getByRole("link", {
+      name: "Open Missing icon app",
+    });
+    expect(firstLink).toHaveAttribute("aria-disabled", "true");
+    expect(firstLink).toHaveAttribute("tabindex", "-1");
+    expect(fireEvent.click(firstLink)).toBe(false);
+
+    const secondCard = screen.getByRole("article", {
+      name: "Drag Second app",
+    });
+    vi.spyOn(secondCard, "getBoundingClientRect").mockReturnValue({
+      left: 0,
+      right: 100,
+      top: 0,
+      bottom: 60,
+      width: 100,
+      height: 60,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    const dataTransfer = {
+      effectAllowed: "none",
+      dropEffect: "none",
+      setData: vi.fn(),
+      getData: vi.fn(),
+    } as unknown as DataTransfer;
+
+    fireEvent.dragStart(firstCard, { dataTransfer });
+    fireEvent.dragOver(secondCard, { dataTransfer, clientX: 90, clientY: 30 });
+    const uncategorizedSection = secondCard.closest("section") as HTMLElement;
+    expect(uncategorizedSection).toHaveClass("category-section--drop-target");
+    expect(secondCard).toHaveClass("app-card--drop-after");
+    fireEvent.drop(uncategorizedSection, { dataTransfer });
+
+    await waitFor(() => {
+      expect(api.reorderApp).toHaveBeenCalledWith({
+        appId: 1,
+        categoryId: null,
+        position: 1,
+      });
+    });
+    await waitFor(() => {
+      expect(
+        [...uncategorizedSection.querySelectorAll("[data-app-id]")].map(
+          (element) => Number((element as HTMLElement).dataset.appId),
+        ),
+      ).toEqual([2, 1]);
+    });
+
+    await user.click(screen.getByRole("button", { name: "Finish editing" }));
+    expect(
+      screen.getByRole("button", { name: "Menu for Missing icon app" }),
+    ).toBeVisible();
+  });
+
+  it("supports empty category targets and rolls back failed persistence", async () => {
+    setAuthenticated([firstApp]);
+    useAppStore.setState({
+      categoriesById: {
+        4: {
+          id: 4,
+          name: "Design",
+          position: 0,
+          createdAt: "2026-07-23T00:00:00Z",
+          updatedAt: "2026-07-23T00:00:00Z",
+        },
+      },
+      categoryIds: [4],
+    });
+    vi.mocked(api.reorderApp).mockRejectedValue(new Error("offline"));
+    const user = userEvent.setup();
+    renderWithProviders(<App />);
+    await user.click(screen.getByRole("button", { name: "Enter edit mode" }));
+
+    const uncategorizedSection = screen
+      .getByLabelText("Uncategorized")
+      .closest("section") as HTMLElement;
+    const designSection = screen
+      .getByRole("heading", { name: "Design" })
+      .closest("section") as HTMLElement;
+    const card = screen.getByRole("article", {
+      name: "Drag Missing icon app",
+    });
+    const dataTransfer = {
+      effectAllowed: "none",
+      dropEffect: "none",
+      setData: vi.fn(),
+      getData: vi.fn(),
+    } as unknown as DataTransfer;
+
+    fireEvent.dragStart(card, { dataTransfer });
+    fireEvent.dragOver(designSection, { dataTransfer });
+    expect(designSection).toHaveClass("category-section--drop-target");
+    fireEvent.drop(designSection, { dataTransfer });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Your previous order was restored",
+    );
+    expect(api.reorderApp).toHaveBeenCalledWith({
+      appId: 1,
+      categoryId: 4,
+      position: 0,
+    });
+    expect(
+      uncategorizedSection.querySelector('[data-app-id="1"]'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Finish editing" }),
+    ).toBeVisible();
   });
 
   it("creates, edits, and deletes an app through accessible dialogs", async () => {
@@ -181,9 +330,7 @@ describe("dashboard UI", () => {
       icon: "github-icon.svg",
     };
     vi.mocked(api.updateApp).mockResolvedValue(updated);
-    await user.click(
-      screen.getByRole("button", { name: "Menu for Figma" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Menu for Figma" }));
     await user.click(await screen.findByRole("menuitem", { name: "Edit" }));
     dialog = await screen.findByRole("dialog", { name: "Edit app" });
     const nameInput = within(dialog).getByLabelText("App name");
@@ -272,9 +419,9 @@ describe("dashboard UI", () => {
     await user.click(screen.getByRole("button", { name: "Menu for Custom" }));
     await user.click(await screen.findByRole("menuitem", { name: "Edit" }));
     const editDialog = await screen.findByRole("dialog", { name: "Edit app" });
-    expect(
-      within(editDialog).getByLabelText("Custom icon URL"),
-    ).toHaveValue(customIconUrl);
+    expect(within(editDialog).getByLabelText("Custom icon URL")).toHaveValue(
+      customIconUrl,
+    );
     expect(
       within(editDialog).getByRole("button", { name: "Use built-in icons" }),
     ).toBeVisible();

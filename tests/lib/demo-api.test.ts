@@ -200,6 +200,55 @@ describe("demo data client", () => {
     );
   });
 
+  it("reorders apps within and across categories", async () => {
+    const storage = new MemoryStorage();
+    const client = createClient(storage);
+    await client.register("Demo.User", "password-one");
+
+    const categories = await client.listCategories();
+    const work = categories.find((category) => category.name === "Work")!;
+    const media = categories.find((category) => category.name === "Media")!;
+    const apps = await client.listApps();
+    const proxmox = apps.find((app) => app.name === "Proxmox")!;
+    const postgres = apps.find((app) => app.name === "Postgres")!;
+
+    await expect(
+      client.reorderApp({
+        appId: postgres.id,
+        categoryId: work.id,
+        position: 0,
+      }),
+    ).resolves.toMatchObject([
+      { id: postgres.id, categoryId: work.id, sortId: 0 },
+      { id: proxmox.id, categoryId: work.id, sortId: 1 },
+    ]);
+
+    const moved = await client.reorderApp({
+      appId: proxmox.id,
+      categoryId: media.id,
+      position: 1,
+    });
+    expect(moved.find((app) => app.id === postgres.id)).toMatchObject({
+      categoryId: work.id,
+      sortId: 0,
+    });
+    expect(moved.find((app) => app.id === proxmox.id)).toMatchObject({
+      categoryId: media.id,
+      sortId: 1,
+    });
+
+    await expect(
+      client.reorderApp({
+        appId: postgres.id,
+        categoryId: work.id,
+        position: 2,
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      fields: { position: "APP_POSITION_INVALID" },
+    });
+  });
+
   it("matches validation and session-expiry errors", async () => {
     const storage = new MemoryStorage();
     let currentTime = initialTime;

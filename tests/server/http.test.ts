@@ -211,4 +211,62 @@ describe("Express HTTP adapter", () => {
       .set("Cookie", cookie)
       .expect(204);
   });
+
+  it("persists app reorder requests and returns the reindexed group", async () => {
+    const registration = await request(app)
+      .post("/api/auth/register")
+      .set("Origin", origin)
+      .send({ username: "Reorder.User", password: "password-one" });
+    const cookie = registration.headers["set-cookie"][0] as string;
+
+    const first = await request(app)
+      .post("/api/apps")
+      .set("Origin", origin)
+      .set("Cookie", cookie)
+      .send({
+        name: "First",
+        icon: "default-app.svg",
+        url: "https://first.example.com",
+      });
+    const second = await request(app)
+      .post("/api/apps")
+      .set("Origin", origin)
+      .set("Cookie", cookie)
+      .send({
+        name: "Second",
+        icon: "default-app.svg",
+        url: "https://second.example.com",
+      });
+
+    await request(app)
+      .put("/api/apps/reorder")
+      .set("Origin", origin)
+      .set("Cookie", cookie)
+      .send({
+        appId: first.body.app.id,
+        categoryId: null,
+        position: 0,
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.apps.map((item: { id: number; sortId: number }) => [
+          item.id,
+          item.sortId,
+        ])).toEqual([
+          [first.body.app.id, 0],
+          [second.body.app.id, 1],
+        ]);
+      });
+
+    await request(app)
+      .put("/api/apps/reorder")
+      .set("Origin", origin)
+      .set("Cookie", cookie)
+      .send({
+        appId: first.body.app.id,
+        categoryId: null,
+        position: 9,
+      })
+      .expect(400);
+  });
 });
