@@ -141,6 +141,16 @@ function setAuthenticated(
   });
 }
 
+async function chooseDashboardAction(
+  user: ReturnType<typeof userEvent.setup>,
+  name: string,
+): Promise<void> {
+  await user.click(
+    screen.getByRole("button", { name: "Dashboard actions" }),
+  );
+  await user.click(await screen.findByRole("menuitem", { name }));
+}
+
 describe("dashboard UI", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -168,6 +178,40 @@ describe("dashboard UI", () => {
     });
   });
 
+  it("groups dashboard actions in an icon menu", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<App />);
+
+    const addAppButton = screen.getByRole("button", { name: "Add app" });
+    expect(addAppButton.querySelector("svg")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitem", { name: "Manage categories" }),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Dashboard actions" }),
+    );
+
+    const editModeItem = await screen.findByRole("menuitem", {
+      name: "Enter edit mode",
+    });
+    const manageCategoriesItem = screen.getByRole("menuitem", {
+      name: "Manage categories",
+    });
+    const logoutItem = screen.getByRole("menuitem", { name: "Log out" });
+    expect(editModeItem.querySelector("svg")).toBeInTheDocument();
+    expect(manageCategoriesItem.querySelector("svg")).toBeInTheDocument();
+    expect(logoutItem.querySelector("svg")).toBeInTheDocument();
+    expect(logoutItem.previousElementSibling).toHaveAttribute(
+      "role",
+      "separator",
+    );
+    await user.click(manageCategoriesItem);
+    expect(
+      await screen.findByRole("dialog", { name: "Manage categories" }),
+    ).toBeVisible();
+  });
+
   it("toggles edit mode and reorders draggable cards", async () => {
     const secondApp: AppItem = {
       ...firstApp,
@@ -184,11 +228,7 @@ describe("dashboard UI", () => {
     const user = userEvent.setup();
     renderWithProviders(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Enter edit mode" }));
-
-    expect(
-      screen.getByRole("button", { name: "Finish editing" }),
-    ).toHaveAttribute("aria-pressed", "true");
+    await chooseDashboardAction(user, "Enter edit mode");
     expect(
       screen.queryByRole("button", { name: "Menu for Missing icon app" }),
     ).not.toBeInTheDocument();
@@ -249,7 +289,7 @@ describe("dashboard UI", () => {
       ).toEqual([2, 1]);
     });
 
-    await user.click(screen.getByRole("button", { name: "Finish editing" }));
+    await chooseDashboardAction(user, "Finish editing");
     expect(
       screen.getByRole("button", { name: "Menu for Missing icon app" }),
     ).toBeVisible();
@@ -272,7 +312,7 @@ describe("dashboard UI", () => {
     vi.mocked(api.reorderApp).mockRejectedValue(new Error("offline"));
     const user = userEvent.setup();
     renderWithProviders(<App />);
-    await user.click(screen.getByRole("button", { name: "Enter edit mode" }));
+    await chooseDashboardAction(user, "Enter edit mode");
 
     const uncategorizedSection = screen
       .getByLabelText("Uncategorized")
@@ -307,7 +347,7 @@ describe("dashboard UI", () => {
       uncategorizedSection.querySelector('[data-app-id="1"]'),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Finish editing" }),
+      screen.getByRole("button", { name: "Dashboard actions" }),
     ).toBeVisible();
   });
 
@@ -323,7 +363,7 @@ describe("dashboard UI", () => {
       workHeading.querySelector(".category-section-heading-icon"),
     ).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Enter edit mode" }));
+    await chooseDashboardAction(user, "Enter edit mode");
 
     const uncategorizedSection = screen.getByLabelText("Uncategorized");
     expect(
@@ -384,7 +424,7 @@ describe("dashboard UI", () => {
     vi.mocked(api.reorderCategories).mockRejectedValue(new Error("offline"));
     const user = userEvent.setup();
     renderWithProviders(<App />);
-    await user.click(screen.getByRole("button", { name: "Enter edit mode" }));
+    await chooseDashboardAction(user, "Enter edit mode");
 
     const mediaHeading = screen.getByRole("heading", { name: "Media" });
     const categoryRect = {
@@ -645,7 +685,7 @@ describe("dashboard UI", () => {
         </MemoryRouter>
       </I18nextProvider>,
     );
-    await user.click(screen.getByRole("button", { name: "Log out" }));
+    await chooseDashboardAction(user, "Log out");
 
     expect(
       await screen.findByRole("heading", {

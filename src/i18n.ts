@@ -45,6 +45,7 @@ void i18n.use(initReactI18next).init({
           subtitle: "Everything you need, one click away.",
           logout: "Log out",
           addApp: "Add app",
+          actionsMenu: "Dashboard actions",
           noAppsTitle: "Build your launchpad",
           noAppsBody: "Add your first app to start your personal dashboard.",
           openApp: "Open {{name}}",
